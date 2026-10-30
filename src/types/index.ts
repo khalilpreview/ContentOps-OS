@@ -35,6 +35,13 @@ export interface User {
   department?: string;
 }
 
+export interface AuthSession {
+  user: User;
+  token?: string;
+  provider: 'google' | 'email' | 'sso';
+  loginAt: string;
+}
+
 export interface HookVariation {
   type: 'Curiosity' | 'Contrarian' | 'Direct Value' | string;
   script: string;

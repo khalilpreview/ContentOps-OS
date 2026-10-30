@@ -101,18 +101,18 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-      <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col">
+      <div className="bg-[#13151c] border border-[#252837] rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col text-white">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-zinc-800 bg-zinc-900/80 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+        <div className="px-5 py-4 border-b border-[#252837] bg-[#181a24] flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-xl bg-[#4ff8ac]/15 text-[#4ff8ac] flex items-center justify-center border border-[#4ff8ac]/30">
               <Plus className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-zinc-100">
+              <h2 className="text-sm font-bold text-white">
                 Create Content Asset Brief
               </h2>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-[#8b93a7]">
                 Initializes ticket in Drafting & Briefs (Stage 1)
               </p>
             </div>
@@ -120,7 +120,7 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors"
+            className="p-1.5 rounded-xl bg-[#10121a] hover:bg-[#1e212e] text-[#8b93a7] hover:text-white border border-[#252837] transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -262,19 +262,19 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
           </div>
 
           {/* Submit button */}
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-800">
+          <div className="flex items-center justify-end gap-2 pt-3.5 border-t border-[#252837]">
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#10121a] hover:bg-[#1e212e] text-[#8b93a7] hover:text-white border border-[#252837] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl text-xs font-extrabold bg-[#4ff8ac] hover:bg-[#38ef98] text-[#0f1118] shadow-md shadow-[#4ff8ac]/20 flex items-center gap-1.5 transition-colors"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
               <span>Create Brief</span>
             </button>
           </div>

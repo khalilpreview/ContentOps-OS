@@ -202,20 +202,20 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-[#13151c] border border-[#252837] rounded-3xl w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden text-white">
         {/* Studio Top Navigation Bar */}
-        <div className="px-5 py-3.5 border-b border-zinc-800 bg-zinc-900/80 flex items-center justify-between gap-4">
+        <div className="px-5 py-3.5 border-b border-[#252837] bg-[#181a24] flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border uppercase tracking-wider ${
+            <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-lg border uppercase tracking-wider ${
               formatTier === 'HERO' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-              formatTier === 'HUB' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' :
+              formatTier === 'HUB' ? 'bg-[#4ff8ac]/20 text-[#4ff8ac] border-[#4ff8ac]/40' :
               'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
             }`}>
               {formatTier}
             </span>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-400 font-mono">Stage:</span>
-              <span className="text-xs font-semibold text-zinc-200 px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700">
+              <span className="text-xs text-[#8b93a7] font-mono">Stage:</span>
+              <span className="text-xs font-semibold text-white px-2 py-0.5 rounded-lg bg-[#10121a] border border-[#252837]">
                 {statusLabels[asset.status]}
               </span>
             </div>
@@ -225,7 +225,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
             {formatTier === 'HERO' && (
               <button
                 onClick={() => onOpenMultiplier(asset)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 transition-colors shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#4ff8ac]/15 hover:bg-[#4ff8ac]/25 text-[#4ff8ac] border border-[#4ff8ac]/30 transition-colors shadow-sm"
               >
                 <GitFork className="h-3.5 w-3.5" />
                 <span>Asset Multiplier Engine</span>
@@ -234,7 +234,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
 
             <button
               onClick={handleSave}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-[#4ff8ac] hover:bg-[#38ef98] text-[#0f1118] transition-colors shadow-md shadow-[#4ff8ac]/20"
             >
               <Save className="h-3.5 w-3.5" />
               <span>{savedNotice ? 'Saved!' : 'Save Brief'}</span>
@@ -242,7 +242,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 transition-colors"
+              className="p-1.5 rounded-xl bg-[#10121a] hover:bg-[#1e212e] text-[#8b93a7] hover:text-white border border-[#252837] transition-colors"
               aria-label="Close Studio"
             >
               <X className="h-4 w-4" />

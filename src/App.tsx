@@ -6,18 +6,31 @@ import { AssetMultiplierModal } from './components/AssetMultiplierModal';
 import { NewAssetModal } from './components/NewAssetModal';
 import { AiConfigModal } from './components/AiConfigModal';
 import { GuardBlockModal } from './components/GuardBlockModal';
+import { AuthPage } from './components/AuthPage';
+import { Sidebar } from './components/Sidebar';
 import { AssetStatus, ContentAsset, FormatTier, PillarType, User } from './types';
 import { INITIAL_ASSETS, SEED_USERS } from './lib/seedData';
 import { validateStatusTransition } from './lib/stateMachine';
+import { getStoredSession, clearSession } from './lib/auth';
 
 const ASSETS_STORAGE_KEY = 'contentops_assets_data';
 const USER_STORAGE_KEY = 'contentops_active_user';
 
 export default function App() {
+  // Authentication session state
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return getStoredSession() !== null;
+  });
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(() => {
+    return getStoredSession() === null;
+  });
+
   // Load users & initial state
   const [allUsers] = useState<User[]>(SEED_USERS);
   const [currentUser, setCurrentUser] = useState<User>(() => {
     try {
+      const session = getStoredSession();
+      if (session?.user) return session.user;
       const savedUserId = localStorage.getItem(USER_STORAGE_KEY);
       if (savedUserId) {
         const found = SEED_USERS.find((u) => u.id === savedUserId);
@@ -59,11 +72,31 @@ export default function App() {
     reason: ''
   });
 
-  // Filters
+  // Filters & Views
+  const [currentView, setCurrentView] = useState<'pipeline' | 'sla' | 'multiplier' | 'archive'>('pipeline');
   const [selectedTier, setSelectedTier] = useState<FormatTier | 'ALL'>('ALL');
   const [selectedPillar, setSelectedPillar] = useState<PillarType | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterOnlySla, setFilterOnlySla] = useState(false);
+
+  const handleChangeView = (view: 'pipeline' | 'sla' | 'multiplier' | 'archive') => {
+    setCurrentView(view);
+    if (view === 'sla') {
+      setFilterOnlySla(true);
+      setSelectedTier('ALL');
+    } else if (view === 'multiplier') {
+      const heroAsset = assets.find((a) => a.formatTier === 'HERO');
+      if (heroAsset) {
+        setSelectedAssetForMultiplier(heroAsset);
+      } else {
+        setIsNewAssetOpen(true);
+      }
+    } else if (view === 'archive') {
+      setFilterOnlySla(false);
+    } else {
+      setFilterOnlySla(false);
+    }
+  };
 
   // Sync assets to storage
   useEffect(() => {
@@ -169,6 +202,19 @@ export default function App() {
     setAssets((prev) => [newAsset, ...prev]);
   };
 
+  // Authentication Handlers
+  const handleLoginSuccess = (user: User) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+    setShowAuthModal(false);
+  };
+
+  const handleSignOut = () => {
+    clearSession();
+    setIsAuthenticated(false);
+    setShowAuthModal(true);
+  };
+
   // Reset to initial demo data
   const handleResetData = () => {
     setAssets(INITIAL_ASSETS);
@@ -184,40 +230,90 @@ export default function App() {
   const breachedCount = assets.filter((a) => a.status === 'SLA_REVIEW' && a.isSlaBreached).length;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
-      {/* Top Navbar */}
-      <Navbar
-        currentUser={currentUser}
-        allUsers={allUsers}
-        onSelectUser={handleSelectUser}
-        activeCount={activePipelineCount}
-        maxCapacity={25}
-        onOpenNewAsset={() => setIsNewAssetOpen(true)}
-        onOpenAiConfig={() => setIsAiConfigOpen(true)}
-        viewMode="kanban"
-        onChangeViewMode={() => {}}
-        breachedCount={breachedCount}
-      />
-
-      {/* Main Kanban Content */}
-      <main className="flex-1 flex flex-col min-h-0">
-        <KanbanBoard
-          assets={assets}
-          allUsers={allUsers}
+    <div className="relative min-h-screen bg-[#0f1118] text-white flex flex-col font-sans selection:bg-[#4ff8ac]/30 selection:text-white overflow-hidden">
+      {/* Background Dashboard: Blurred when Auth modal is active */}
+      <div 
+        className={`min-h-screen flex flex-col transition-all duration-300 ${
+          !isAuthenticated && showAuthModal 
+            ? 'filter blur-md brightness-50 pointer-events-none select-none scale-[0.99] origin-center' 
+            : ''
+        }`}
+      >
+        {/* Top Navbar */}
+        <Navbar
           currentUser={currentUser}
-          onOpenDetail={(asset) => setSelectedAssetForDetail(asset)}
-          onOpenMultiplier={(asset) => setSelectedAssetForMultiplier(asset)}
-          onTransitionAsset={handleTransitionAsset}
-          selectedTier={selectedTier}
-          onChangeTier={setSelectedTier}
-          selectedPillar={selectedPillar}
-          onChangePillar={setSelectedPillar}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          filterOnlySla={filterOnlySla}
-          onToggleOnlySla={() => setFilterOnlySla(!filterOnlySla)}
+          allUsers={allUsers}
+          onSelectUser={handleSelectUser}
+          activeCount={activePipelineCount}
+          maxCapacity={25}
+          onOpenNewAsset={() => {
+            if (!isAuthenticated) {
+              setShowAuthModal(true);
+              return;
+            }
+            setIsNewAssetOpen(true);
+          }}
+          onOpenAiConfig={() => setIsAiConfigOpen(true)}
+          viewMode="kanban"
+          onChangeViewMode={() => {}}
+          breachedCount={breachedCount}
+          onSignOut={handleSignOut}
+          isAuthenticated={isAuthenticated}
+          onOpenAuthModal={() => setShowAuthModal(true)}
         />
-      </main>
+
+        {/* Main Workspace with Sidebar & Kanban Content */}
+        <div className="flex-1 flex min-h-0 overflow-hidden">
+          <Sidebar
+            currentView={currentView}
+            onChangeView={handleChangeView}
+            assets={assets}
+            onOpenNewAsset={() => {
+              if (!isAuthenticated) {
+                setShowAuthModal(true);
+                return;
+              }
+              setIsNewAssetOpen(true);
+            }}
+            onOpenMultiplier={() => {
+              if (!isAuthenticated) {
+                setShowAuthModal(true);
+                return;
+              }
+              const heroAsset = assets.find((a) => a.formatTier === 'HERO');
+              if (heroAsset) setSelectedAssetForMultiplier(heroAsset);
+              else setIsNewAssetOpen(true);
+            }}
+          />
+
+          <main className="flex-1 flex flex-col min-h-0 overflow-y-auto bg-[#0f1118]">
+            <KanbanBoard
+              assets={assets}
+              allUsers={allUsers}
+              currentUser={currentUser}
+              onOpenDetail={(asset) => setSelectedAssetForDetail(asset)}
+              onOpenMultiplier={(asset) => setSelectedAssetForMultiplier(asset)}
+              onTransitionAsset={handleTransitionAsset}
+              selectedTier={selectedTier}
+              onChangeTier={setSelectedTier}
+              selectedPillar={selectedPillar}
+              onChangePillar={setSelectedPillar}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              filterOnlySla={filterOnlySla}
+              onToggleOnlySla={() => setFilterOnlySla(!filterOnlySla)}
+            />
+          </main>
+        </div>
+      </div>
+
+      {/* Auth Popup Modal with Blurred Dashboard in Background */}
+      {(!isAuthenticated || showAuthModal) && (
+        <AuthPage 
+          onLoginSuccess={handleLoginSuccess} 
+          onClose={() => setShowAuthModal(false)}
+        />
+      )}
 
       {/* Detail & Brief Studio Modal */}
       {selectedAssetForDetail && (

@@ -192,21 +192,21 @@ export const AssetMultiplierModal: React.FC<AssetMultiplierModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-      <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-3xl flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-[#13151c] border border-[#252837] rounded-3xl w-full max-w-3xl flex flex-col shadow-2xl overflow-hidden text-white">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-zinc-800 bg-zinc-900/80 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-[#252837] bg-[#181a24] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center border border-amber-500/40">
+            <div className="h-8 w-8 rounded-xl bg-[#4ff8ac]/15 text-[#4ff8ac] flex items-center justify-center border border-[#4ff8ac]/30">
               <GitFork className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-zinc-100 flex items-center gap-2">
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <span>Asset Multiplier Engine</span>
-                <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-lg bg-[#4ff8ac]/15 text-[#4ff8ac] border border-[#4ff8ac]/30">
                   Macro ➔ Micro Repurposing
                 </span>
               </h2>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-[#8b93a7]">
                 Generate derivative child assets inheriting context from parent Hero deliverable
               </p>
             </div>
@@ -214,7 +214,7 @@ export const AssetMultiplierModal: React.FC<AssetMultiplierModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 transition-colors"
+            className="p-1.5 rounded-xl bg-[#10121a] hover:bg-[#1e212e] text-[#8b93a7] hover:text-white border border-[#252837] transition-colors"
             aria-label="Close Asset Multiplier"
           >
             <X className="h-4 w-4" />
@@ -224,24 +224,24 @@ export const AssetMultiplierModal: React.FC<AssetMultiplierModalProps> = ({
         {/* Content Body */}
         <div className="p-5 sm:p-6 space-y-5 overflow-y-auto max-h-[80vh]">
           {/* Parent Context Banner */}
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 flex flex-col gap-1.5">
+          <div className="bg-[#181a24] border border-[#252837] rounded-2xl p-4 flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-zinc-400 font-mono text-[11px]">Parent Macro Asset Context:</span>
-              <span className="text-amber-400 font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded bg-amber-950 border border-amber-800">
+              <span className="text-[#8b93a7] font-mono text-[11px]">Parent Macro Asset Context:</span>
+              <span className="text-amber-400 font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-lg bg-amber-950/80 border border-amber-800">
                 HERO Tier
               </span>
             </div>
-            <h3 className="font-semibold text-zinc-100 text-sm">
+            <h3 className="font-bold text-white text-sm">
               {parentAsset.title}
             </h3>
-            <p className="text-xs text-zinc-400 line-clamp-2">
+            <p className="text-xs text-[#8b93a7] line-clamp-2">
               {parentAsset.rawIntakeNotes || parentAsset.description || 'No raw notes attached.'}
             </p>
           </div>
 
           {/* Section 1: One-Click Instant Generators */}
           <div className="space-y-2.5">
-            <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wider block">
+            <span className="text-xs font-bold text-white uppercase tracking-wider block">
               1-Click Standard Repurposing Packs
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

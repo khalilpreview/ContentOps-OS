@@ -10,7 +10,12 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
-  GitFork
+  GitFork,
+  LayoutGrid,
+  Zap,
+  Flame,
+  ShieldCheck,
+  Film
 } from 'lucide-react';
 import { AssetStatus, ContentAsset, FormatTier, PillarType, User } from '../types';
 import { PIPELINE_COLUMNS } from '../lib/stateMachine';
@@ -31,6 +36,7 @@ interface KanbanBoardProps {
   onSearchChange: (q: string) => void;
   filterOnlySla: boolean;
   onToggleOnlySla: () => void;
+  onOpenNewAsset?: () => void;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -47,7 +53,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   searchQuery,
   onSearchChange,
   filterOnlySla,
-  onToggleOnlySla
+  onToggleOnlySla,
+  onOpenNewAsset
 }) => {
   const [draggedAsset, setDraggedAsset] = useState<ContentAsset | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<AssetStatus | null>(null);
@@ -55,13 +62,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   // Filter assets
   const filteredAssets = assets.filter((asset) => {
-    // Tier filter
     if (selectedTier !== 'ALL' && asset.formatTier !== selectedTier) return false;
-    // Pillar filter
     if (selectedPillar !== 'ALL' && asset.pillar !== selectedPillar) return false;
-    // SLA filter
     if (filterOnlySla && asset.status !== 'SLA_REVIEW') return false;
-    // Search query
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
       const matchTitle = asset.title.toLowerCase().includes(q);
@@ -74,7 +77,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return true;
   });
 
-  // Assets grouped by status
   const assetsByColumn: Record<AssetStatus, ContentAsset[]> = {
     DRAFT_BRIEF: filteredAssets.filter((a) => a.status === 'DRAFT_BRIEF'),
     SLA_REVIEW: filteredAssets.filter((a) => a.status === 'SLA_REVIEW'),
@@ -84,7 +86,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     PUBLISHED: filteredAssets.filter((a) => a.status === 'PUBLISHED')
   };
 
-  // Next status determination for quick advance
   const getNextStatus = (current: AssetStatus): AssetStatus | null => {
     switch (current) {
       case 'DRAFT_BRIEF': return 'SLA_REVIEW';
@@ -104,7 +105,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  // Drag handlers
   const handleDragStart = (e: React.DragEvent, asset: ContentAsset) => {
     setDraggedAsset(asset);
     e.dataTransfer.setData('text/plain', asset.id);
@@ -139,77 +139,139 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     { id: 'INTELLIGENCE_OPTIMIZATION', label: 'Intel & AI Opt' }
   ];
 
-  const formatTiers: Array<{ id: FormatTier | 'ALL'; label: string }> = [
-    { id: 'ALL', label: 'All Tiers' },
-    { id: 'HERO', label: 'HERO (Macro)' },
-    { id: 'HUB', label: 'HUB (Series)' },
-    { id: 'HYGIENE', label: 'HYGIENE (Search)' }
-  ];
-
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-zinc-950 text-zinc-100 overflow-hidden">
-      {/* Filter and Control Bar */}
-      <div className="px-4 lg:px-6 py-3 border-b border-zinc-800 bg-zinc-900/50 flex flex-wrap items-center justify-between gap-3">
-        {/* Tier filter pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-          <span className="text-xs text-zinc-400 font-medium mr-1 flex items-center gap-1">
-            <Filter className="h-3 w-3" /> Tier:
-          </span>
-          {formatTiers.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => onChangeTier(t.id)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                selectedTier === t.id
-                  ? 'bg-zinc-100 text-zinc-900 font-bold shadow-sm'
-                  : 'bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 border border-zinc-700/60'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+    <div className="flex-1 flex flex-col min-w-0 bg-[#0f1118] text-[#f1f3f9] overflow-hidden select-none">
+      
+      {/* Featured Banner & Category Bar Container */}
+      <div className="px-4 lg:px-6 pt-4 pb-2 space-y-4">
+        
+        {/* Featured Hero Banner matching "MASSIVE STUDIOS" mint banner from reference */}
+        <div className="relative rounded-3xl bg-gradient-to-r from-[#4ff8ac] via-[#38ef98] to-[#25dd8b] text-[#0f1118] p-5 sm:p-6 shadow-xl overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* Subtle geometric circle overlay */}
+          <div className="absolute right-0 top-0 bottom-0 w-80 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 space-y-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#0f1118] text-[#4ff8ac] text-[10px] font-extrabold uppercase tracking-wider">
+              <Zap className="h-3 w-3 fill-current" />
+              <span>FEATURED PIPELINE • ZERO-DRIFT STATE MACHINE</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight uppercase leading-tight">
+              Enterprise ContentOps OS
+            </h1>
+            <p className="text-xs font-semibold text-[#0f1118]/80 max-w-xl">
+              Strict RACI gatekeeping veto blocks unreviewed publishing; dynamic 48-hour SLA clocks enforce turnaround deadlines.
+            </p>
+          </div>
+
+          <div className="relative z-10 flex items-center gap-2.5 shrink-0">
+            {onOpenNewAsset && (
+              <button
+                onClick={onOpenNewAsset}
+                className="px-4 py-2 rounded-2xl bg-[#0f1118] hover:bg-[#181a24] text-white text-xs font-extrabold shadow-lg transition-transform active:scale-95 cursor-pointer flex items-center gap-1.5"
+              >
+                <span>+ Launch Brief</span>
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Secondary filters: Pillar, Search, SLA alert toggle */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Pillar Selector */}
-          <select
-            value={selectedPillar}
-            onChange={(e) => onChangePillar(e.target.value as any)}
-            className="bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            aria-label="Filter by Strategic Pillar"
-          >
-            {pillars.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
+        {/* Category Squircles matching LOBBY, ORIGINALS, SLOTS from reference screenshot */}
+        <div className="flex items-center justify-between gap-3 overflow-x-auto no-scrollbar pb-1">
+          <div className="flex items-center gap-2">
+            {/* Lobby / All */}
+            <button
+              onClick={() => {
+                onChangeTier('ALL');
+                if (filterOnlySla) onToggleOnlySla();
+              }}
+              className={`h-16 w-20 sm:w-24 rounded-2xl border flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer ${
+                selectedTier === 'ALL' && !filterOnlySla
+                  ? 'bg-[#181a24] border-[#4ff8ac] text-[#4ff8ac] shadow-md shadow-[#4ff8ac]/10'
+                  : 'bg-[#181a24] border-[#252837] text-[#8b93a7] hover:bg-[#202330] hover:text-white'
+              }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              <span>ALL PIPELINE</span>
+            </button>
 
-          {/* SLA Filter Toggle */}
-          <button
-            onClick={onToggleOnlySla}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
-              filterOnlySla
-                ? 'bg-amber-950/80 text-amber-300 border-amber-500'
-                : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-zinc-200'
-            }`}
-            title="Filter cards currently in SLA Review window"
-          >
-            <Clock className="h-3.5 w-3.5" />
-            <span>SLA Active</span>
-          </button>
+            {/* HERO Tier Squircle */}
+            <button
+              onClick={() => onChangeTier('HERO')}
+              className={`h-16 w-20 sm:w-24 rounded-2xl border flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer ${
+                selectedTier === 'HERO'
+                  ? 'bg-[#181a24] border-[#4ff8ac] text-[#4ff8ac] shadow-md shadow-[#4ff8ac]/10'
+                  : 'bg-[#181a24] border-[#252837] text-[#8b93a7] hover:bg-[#202330] hover:text-white'
+              }`}
+            >
+              <Flame className="h-4 w-4" />
+              <span>HERO TIER</span>
+            </button>
 
-          {/* Search Input */}
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
-            <input
-              type="text"
-              placeholder="Search assets, briefs, hooks..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="bg-zinc-900 border border-zinc-700 rounded-lg pl-8 pr-3 py-1 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-44 md:w-56"
-            />
+            {/* HUB Tier Squircle */}
+            <button
+              onClick={() => onChangeTier('HUB')}
+              className={`h-16 w-20 sm:w-24 rounded-2xl border flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer ${
+                selectedTier === 'HUB'
+                  ? 'bg-[#181a24] border-[#4ff8ac] text-[#4ff8ac] shadow-md shadow-[#4ff8ac]/10'
+                  : 'bg-[#181a24] border-[#252837] text-[#8b93a7] hover:bg-[#202330] hover:text-white'
+              }`}
+            >
+              <Layers className="h-4 w-4" />
+              <span>HUB SERIES</span>
+            </button>
+
+            {/* HYGIENE Tier Squircle */}
+            <button
+              onClick={() => onChangeTier('HYGIENE')}
+              className={`h-16 w-20 sm:w-24 rounded-2xl border flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer ${
+                selectedTier === 'HYGIENE'
+                  ? 'bg-[#181a24] border-[#4ff8ac] text-[#4ff8ac] shadow-md shadow-[#4ff8ac]/10'
+                  : 'bg-[#181a24] border-[#252837] text-[#8b93a7] hover:bg-[#202330] hover:text-white'
+              }`}
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              <span>HYGIENE</span>
+            </button>
+
+            {/* SLA Active Squircle */}
+            <button
+              onClick={onToggleOnlySla}
+              className={`h-16 w-20 sm:w-24 rounded-2xl border flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer ${
+                filterOnlySla
+                  ? 'bg-[#181a24] border-amber-400 text-amber-300 shadow-md shadow-amber-400/10'
+                  : 'bg-[#181a24] border-[#252837] text-[#8b93a7] hover:bg-[#202330] hover:text-white'
+              }`}
+            >
+              <Clock className="h-4 w-4" />
+              <span>SLA ACTIVE</span>
+            </button>
+          </div>
+
+          {/* Search & Pillar Selector */}
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedPillar}
+              onChange={(e) => onChangePillar(e.target.value as any)}
+              className="bg-[#181a24] border border-[#252837] rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-[#4ff8ac]"
+              aria-label="Filter by Strategic Pillar"
+            >
+              {pillars.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8b93a7]" />
+              <input
+                type="text"
+                placeholder="Search assets, briefs, hooks..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="bg-[#181a24] border border-[#252837] rounded-xl pl-9 pr-3 py-2 text-xs text-zinc-100 placeholder-[#8b93a7] focus:outline-none focus:ring-1 focus:ring-[#4ff8ac] w-48 lg:w-56"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -227,34 +289,34 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 onDragOver={(e) => handleDragOver(e, col.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, col.id)}
-                className={`flex-1 min-w-[250px] max-w-[320px] flex flex-col rounded-2xl bg-zinc-900/40 border transition-all ${
+                className={`flex-1 min-w-[250px] max-w-[320px] flex flex-col rounded-3xl bg-[#13151c] border transition-all ${
                   isDropTarget
-                    ? 'border-indigo-500 bg-indigo-950/10 ring-2 ring-indigo-500/20'
-                    : 'border-zinc-800/80'
-                } max-h-[calc(100vh-160px)]`}
+                    ? 'border-[#4ff8ac] bg-[#181a24] ring-2 ring-[#4ff8ac]/20'
+                    : 'border-[#222533]'
+                } max-h-[calc(100vh-270px)]`}
               >
                 {/* Column Header */}
-                <div className="p-3.5 border-b border-zinc-800/80 bg-zinc-900/60 rounded-t-2xl">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700/60">
+                <div className="p-4 border-b border-[#222533] bg-[#161822] rounded-t-3xl">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#4ff8ac] px-2 py-0.5 rounded-full bg-[#4ff8ac]/10 border border-[#4ff8ac]/20">
                       {col.badge}
                     </span>
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-200">
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#10121a] text-zinc-200 border border-[#252837]">
                       {colAssets.length}
                     </span>
                   </div>
-                  <h2 className="text-sm font-bold text-zinc-100 tracking-tight">
+                  <h2 className="text-sm font-bold text-white tracking-tight">
                     {col.title}
                   </h2>
-                  <p className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5">
+                  <p className="text-[11px] text-[#8b93a7] line-clamp-1 mt-0.5">
                     {col.description}
                   </p>
                 </div>
 
                 {/* Cards Container */}
-                <div className="flex-1 overflow-y-auto p-2.5 flex flex-col gap-2.5 min-h-[160px]">
+                <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 min-h-[160px]">
                   {colAssets.length === 0 ? (
-                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-zinc-500 border border-dashed border-zinc-800/80 rounded-xl my-2">
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-[#8b93a7] border border-dashed border-[#252837] rounded-2xl my-2">
                       <span className="text-xs">No assets in this stage</span>
                       <span className="text-[10px] text-zinc-600 mt-1">Drag an asset here to advance</span>
                     </div>
@@ -279,14 +341,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         </div>
       </div>
 
-      {/* Collapsible Published Tray */}
-      <div className="border-t border-zinc-800 bg-zinc-950 px-4 lg:px-6 py-2.5">
+      {/* Published Tray at bottom */}
+      <div className="border-t border-[#222533] bg-[#10121a] px-4 lg:px-6 py-2.5">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setShowArchive(!showArchive)}
-            className="flex items-center gap-2 text-xs font-semibold text-zinc-300 hover:text-zinc-100 transition-colors"
+            className="flex items-center gap-2 text-xs font-semibold text-[#8b93a7] hover:text-[#4ff8ac] transition-colors cursor-pointer"
           >
-            <Archive className="h-4 w-4 text-emerald-400" />
+            <Archive className="h-4 w-4 text-[#4ff8ac]" />
             <span>Published Deliverables Archive ({assetsByColumn.PUBLISHED.length})</span>
             {showArchive ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
           </button>
@@ -301,21 +363,21 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               <div
                 key={asset.id}
                 onClick={() => onOpenDetail(asset)}
-                className="bg-zinc-900/80 border border-zinc-800 hover:border-emerald-500/50 p-2.5 rounded-lg cursor-pointer flex flex-col gap-1 transition-all"
+                className="bg-[#181a24] border border-[#252837] hover:border-[#4ff8ac]/50 p-3 rounded-2xl cursor-pointer flex flex-col gap-1 transition-all"
               >
                 <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                  <span className="text-[#4ff8ac] font-bold uppercase tracking-wider flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3" /> Published
                   </span>
-                  <span className="text-zinc-400 font-mono">
+                  <span className="text-[#8b93a7] font-mono">
                     {asset.updatedAt.slice(0, 10)}
                   </span>
                 </div>
-                <h4 className="text-xs font-medium text-zinc-200 line-clamp-1">
+                <h4 className="text-xs font-semibold text-zinc-200 line-clamp-1">
                   {asset.title}
                 </h4>
                 {asset.deliverableUrl && (
-                  <span className="text-[10px] text-indigo-400 truncate">
+                  <span className="text-[10px] text-[#4ff8ac] truncate font-mono">
                     {asset.deliverableUrl}
                   </span>
                 )}

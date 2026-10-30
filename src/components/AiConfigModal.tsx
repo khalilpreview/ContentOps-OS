@@ -81,18 +81,18 @@ export const AiConfigModal: React.FC<AiConfigModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-      <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
+      <div className="bg-[#13151c] border border-[#252837] rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col text-white">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-zinc-800 bg-zinc-900/80 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-[#252837] bg-[#181a24] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+            <div className="h-8 w-8 rounded-xl bg-[#4ff8ac]/15 text-[#4ff8ac] flex items-center justify-center border border-[#4ff8ac]/30">
               <Cpu className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-zinc-100">
+              <h2 className="text-sm font-bold text-white">
                 Engine & AI Configuration
               </h2>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-[#8b93a7]">
                 IFM.ai K2 Horizon OpenAI-compatible inference settings
               </p>
             </div>
@@ -100,7 +100,7 @@ export const AiConfigModal: React.FC<AiConfigModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors"
+            className="p-1.5 rounded-xl bg-[#10121a] hover:bg-[#1e212e] text-[#8b93a7] hover:text-white border border-[#252837] transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -109,10 +109,10 @@ export const AiConfigModal: React.FC<AiConfigModalProps> = ({
         {/* Body */}
         <div className="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto max-h-[75vh]">
           {/* Info pill */}
-          <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-indigo-200 flex items-start gap-2.5">
-            <ShieldCheck className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
+          <div className="p-3.5 rounded-2xl bg-[#181a24] border border-[#252837] text-[#8b93a7] flex items-start gap-2.5">
+            <ShieldCheck className="h-4 w-4 text-[#4ff8ac] shrink-0 mt-0.5" />
             <div>
-              <span className="font-semibold block text-indigo-100 mb-0.5">
+              <span className="font-bold block text-white mb-0.5">
                 K2 Horizon AI Studio Engine
               </span>
               <span>
@@ -188,7 +188,7 @@ export const AiConfigModal: React.FC<AiConfigModalProps> = ({
               type="button"
               onClick={handleTestConnection}
               disabled={testStatus === 'testing'}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors"
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#10121a] hover:bg-[#1e212e] text-[#8b93a7] hover:text-white border border-[#252837] transition-colors"
             >
               {testStatus === 'testing' ? 'Testing...' : 'Test Connection'}
             </button>
@@ -196,7 +196,7 @@ export const AiConfigModal: React.FC<AiConfigModalProps> = ({
             <button
               type="button"
               onClick={handleSave}
-              className="px-4 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5 shadow-sm transition-colors"
+              className="px-4 py-2 rounded-xl text-xs font-extrabold bg-[#4ff8ac] hover:bg-[#38ef98] text-[#0f1118] flex items-center gap-1.5 shadow-md shadow-[#4ff8ac]/20 transition-colors"
             >
               <Save className="h-3.5 w-3.5" />
               <span>{savedSuccess ? 'Saved!' : 'Save Settings'}</span>
