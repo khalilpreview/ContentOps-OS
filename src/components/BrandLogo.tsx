@@ -22,7 +22,6 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
-      {/* Exact SVG mark provided by user - pure white as requested */}
       <svg 
         viewBox="0 0 60 20" 
         className={`${iconHeight} w-auto ${logoColor} shrink-0 transition-transform duration-200 hover:scale-105`} 
@@ -40,7 +39,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       {showText && (
         <span className={`font-extrabold tracking-tight text-white flex items-center gap-1.5 ${textClass}`}>
           <span>ContentOps</span>
-          <span className="text-[#4ff8ac]">OS</span>
+          <span className="text-[#00E599]">OS</span>
         </span>
       )}
     </div>

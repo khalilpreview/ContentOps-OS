@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateStatusTransition } from './stateMachine';
-import { calculateSla } from './sla';
+import { validateStatusTransition, canToggleGatekeeperSignOff } from './stateMachine';
+import { calculateSla, isSlaRiskAsset, isNeedsMySignOffAsset, evaluatePostLaunchRetention } from './sla';
+import { buildCopilotContext } from '../hooks/useCopilotContext';
+import { evaluateCopilotCommand } from './ai/tools';
+import { INITIAL_ASSETS } from './seedData';
 import { ContentAsset, User } from '../types';
 
 const contentManager: User = {
@@ -25,13 +28,6 @@ const stakeholder: User = {
   role: 'STAKEHOLDER'
 };
 
-const distributionLead: User = {
-  id: 'u4',
-  name: 'Devon Ross',
-  email: 'devon@enterprise.internal',
-  role: 'DISTRIBUTION_LEAD'
-};
-
 const sampleAsset: ContentAsset = {
   id: 'asset-1',
   title: 'AI Workflows Keynote 2026',
@@ -40,7 +36,7 @@ const sampleAsset: ContentAsset = {
   status: 'DRAFT_BRIEF',
   priority: 'HIGH',
   hookStrategy: 'Contrarian: Stop automating low-value tasks',
-  platformSpecs: '16:9 4K 60fps & 9:16 cutdowns',
+  platformSpecs: '1080x1920, 9:16 safe margins, -14 LUFS',
   targetKpi: '65% Retention, >50k shares',
   rawIntakeNotes: 'Enterprise architecture shift notes',
   slaHours: 48,
@@ -59,18 +55,15 @@ const sampleAsset: ContentAsset = {
 };
 
 test('Transition 1: DRAFT_BRIEF -> SLA_REVIEW requires mandatory brief fields', () => {
-  // Incomplete brief
   const incompleteAsset = { ...sampleAsset, hookStrategy: '' };
   const resFail = validateStatusTransition(incompleteAsset, 'SLA_REVIEW', creativeSpecialist);
   assert.equal(resFail.allowed, false);
   assert.match(resFail.reason || '', /Hook Strategy/);
 
-  // Complete brief
   const now = new Date('2026-10-30T12:00:00Z');
   const resSuccess = validateStatusTransition(sampleAsset, 'SLA_REVIEW', creativeSpecialist, now);
   assert.equal(resSuccess.allowed, true);
   assert.ok(resSuccess.updatedAsset?.slaExpiresAt);
-  // 48 hours later
   const expires = new Date(resSuccess.updatedAsset!.slaExpiresAt!);
   assert.equal(expires.toISOString(), '2026-11-01T12:00:00.000Z');
 });
@@ -83,17 +76,14 @@ test('Transition 2: SLA_REVIEW -> IN_PRODUCTION requires STAKEHOLDER or CONTENT_
     slaExpiresAt: '2026-11-01T10:00:00Z'
   };
 
-  // Creative specialist cannot approve SLA
   const fail = validateStatusTransition(reviewingAsset, 'IN_PRODUCTION', creativeSpecialist);
   assert.equal(fail.allowed, false);
   assert.match(fail.reason || '', /RACI Gate Block/);
 
-  // Stakeholder can approve
   const passStakeholder = validateStatusTransition(reviewingAsset, 'IN_PRODUCTION', stakeholder);
   assert.equal(passStakeholder.allowed, true);
   assert.equal(passStakeholder.updatedAsset?.status, 'IN_PRODUCTION');
 
-  // Content Manager can approve
   const passManager = validateStatusTransition(reviewingAsset, 'IN_PRODUCTION', contentManager);
   assert.equal(passManager.allowed, true);
 });
@@ -110,58 +100,117 @@ test('Transition 3: IN_PRODUCTION -> QA_GATE requires deliverable URL', () => {
   assert.equal(pass.updatedAsset?.status, 'QA_GATE');
 });
 
-test('Transition 4: QA_GATE -> READY_TO_PUBLISH enforces VETO BLOCK and CONTENT_MANAGER role', () => {
+test('Transition 4: QA_GATE -> READY_TO_PUBLISH enforces 4-point VETO BLOCK and CONTENT_MANAGER role', () => {
+  assert.equal(canToggleGatekeeperSignOff(contentManager), true);
+  assert.equal(canToggleGatekeeperSignOff(creativeSpecialist), false);
+  assert.equal(canToggleGatekeeperSignOff(stakeholder), false);
+
   const qaAsset = {
     ...sampleAsset,
     status: 'QA_GATE' as const,
     deliverableUrl: 'https://figma.com/file/xyz',
     qaToneApproved: true,
-    qaSpecsValidated: false, // missing!
+    qaSpecsValidated: false,
     qaRightsCleared: true,
     qaGatekeeperSigned: true
   };
 
-  // Blocked due to incomplete checklist
   const failChecklist = validateStatusTransition(qaAsset, 'READY_TO_PUBLISH', contentManager);
   assert.equal(failChecklist.allowed, false);
   assert.match(failChecklist.reason || '', /VETO BLOCK/);
-  assert.match(failChecklist.reason || '', /Platform Specs/);
+  assert.match(failChecklist.reason || '', /Safe Zones/);
 
-  // All checks satisfied, but non-manager user attempts to sign off
-  const completeChecks = { ...qaAsset, qaSpecsValidated: true };
+  const unsignedAsset = { ...qaAsset, qaSpecsValidated: true, qaGatekeeperSigned: false };
+  const failUnsigned = validateStatusTransition(unsignedAsset, 'READY_TO_PUBLISH', contentManager);
+  assert.equal(failUnsigned.allowed, false);
+  assert.match(failUnsigned.reason || '', /Gatekeeper Final Sign-off/);
+
+  const completeChecks = { ...qaAsset, qaSpecsValidated: true, qaGatekeeperSigned: true };
   const failRole = validateStatusTransition(completeChecks, 'READY_TO_PUBLISH', creativeSpecialist);
   assert.equal(failRole.allowed, false);
   assert.match(failRole.reason || '', /Only a CONTENT_MANAGER/);
 
-  // Satisfied by Content Manager
   const pass = validateStatusTransition(completeChecks, 'READY_TO_PUBLISH', contentManager);
   assert.equal(pass.allowed, true);
   assert.equal(pass.updatedAsset?.status, 'READY_TO_PUBLISH');
   assert.equal(pass.updatedAsset?.qaSignedById, 'u1');
 });
 
-test('SLA clock calculations: on track, warning, and breached states', () => {
+test('SLA clock calculations: >24h green, 1h-24h gold warning, and <0h breached states', () => {
   const baseAsset: ContentAsset = {
     ...sampleAsset,
     status: 'SLA_REVIEW',
     slaStartedAt: '2026-10-30T00:00:00Z',
-    slaExpiresAt: '2026-11-01T00:00:00Z' // 48h from start
+    slaExpiresAt: '2026-11-01T00:00:00Z'
   };
 
-  // Current time: 10h after start -> 38h remaining (>24h = ON_TRACK)
   const clock1 = calculateSla(baseAsset, new Date('2026-10-30T10:00:00Z'));
   assert.equal(clock1.status, 'ON_TRACK');
   assert.equal(clock1.isBreached, false);
   assert.equal(clock1.hoursRemaining, 38);
+  assert.equal(clock1.label, '38h remaining');
 
-  // Current time: 40h after start -> 8h remaining (<12h = WARNING)
-  const clock2 = calculateSla(baseAsset, new Date('2026-10-31T16:00:00Z'));
+  const clock2 = calculateSla(baseAsset, new Date('2026-10-31T12:00:00Z'));
   assert.equal(clock2.status, 'WARNING');
   assert.equal(clock2.isBreached, false);
-  assert.equal(clock2.hoursRemaining, 8);
+  assert.equal(clock2.hoursRemaining, 12);
+  assert.equal(clock2.label, '12h remaining');
 
-  // Current time: 50h after start -> past expiry = BREACHED
-  const clock3 = calculateSla(baseAsset, new Date('2026-11-01T02:00:00Z'));
+  const clock3 = calculateSla(baseAsset, new Date('2026-11-01T03:00:00Z'));
   assert.equal(clock3.status, 'BREACHED');
   assert.equal(clock3.isBreached, true);
+  assert.equal(clock3.label, 'SLA BREACHED: -3h');
+});
+
+test('Quick filters and Phase 5 post-launch retention evaluation', () => {
+  const qaUnsigned: ContentAsset = {
+    ...sampleAsset,
+    status: 'QA_GATE',
+    qaGatekeeperSigned: false
+  };
+  assert.equal(isNeedsMySignOffAsset(qaUnsigned, contentManager), true);
+  assert.equal(isNeedsMySignOffAsset(qaUnsigned, creativeSpecialist), false);
+
+  const slaRiskAsset: ContentAsset = {
+    ...sampleAsset,
+    status: 'SLA_REVIEW',
+    slaExpiresAt: '2026-10-30T18:00:00Z'
+  };
+  assert.equal(isSlaRiskAsset(slaRiskAsset, new Date('2026-10-30T10:00:00Z')), true);
+
+  const winEval = evaluatePostLaunchRetention(72);
+  assert.equal(winEval.isWinningFormat, true);
+  assert.equal(winEval.paidEligible, true);
+  assert.equal(winEval.badgeLabel, '🏆 WINNING FORMAT');
+
+  const normalEval = evaluatePostLaunchRetention(55);
+  assert.equal(normalEval.isWinningFormat, false);
+  assert.equal(normalEval.paidEligible, false);
+  assert.equal(normalEval.badgeLabel, null);
+});
+
+test('Thrill Copilot context hydration & tool-calling command evaluation', () => {
+  const ctx = buildCopilotContext({ assets: INITIAL_ASSETS }, contentManager);
+  assert.equal(ctx.currentUser.role, 'CONTENT_MANAGER');
+  assert.equal(ctx.pipelineSummary.activePipelineCount, 8);
+  assert.equal(ctx.pipelineSummary.capacityLimit, 25);
+  assert.equal(ctx.pipelineSummary.pendingQASignoffs, 1);
+  assert.ok(ctx.pipelineSummary.slaRisks >= 2);
+
+  // Test 1: "What requires my attention right now?"
+  const resAttention = evaluateCopilotCommand('⚠️ What requires my attention right now?', ctx);
+  assert.ok(resAttention.tool_calls && resAttention.tool_calls.length > 0);
+  assert.equal(resAttention.tool_calls![0].function.name, 'filter_board');
+
+  // Test 2: "Split 'Executive Briefing' into 3 shorts"
+  const resSplit = evaluateCopilotCommand("⚡ Split 'Executive Briefing' into 3 shorts", ctx);
+  assert.ok(resSplit.tool_calls && resSplit.tool_calls.length > 0);
+  assert.equal(resSplit.tool_calls![0].function.name, 'trigger_multiplier');
+  const splitArgs = JSON.parse(resSplit.tool_calls![0].function.arguments);
+  assert.equal(splitArgs.derivativeCount, 3);
+
+  // Test 3: "Audit Stage 4 QA"
+  const resQa = evaluateCopilotCommand('🛡️ Audit Stage 4 QA', ctx);
+  assert.ok(resQa.tool_calls && resQa.tool_calls.length > 0);
+  assert.equal(resQa.tool_calls![0].function.name, 'sign_off_qa');
 });

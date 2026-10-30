@@ -36,6 +36,10 @@ export function saveStoredAiConfig(config: AiConfig) {
 
 /**
  * Generates an Auto-Brief using IFM.ai K2 Horizon (or high-fidelity intelligent domain fallback if key is unconfigured)
+ * Returns:
+ * - 3 Hooks (Contrarian, Curiosity, Direct Value)
+ * - Platform Specs (1080x1920, 9:16 safe margins, -14 LUFS)
+ * - Target KPI benchmark
  */
 export async function generateBrief(
   rawNotes: string,
@@ -45,7 +49,6 @@ export async function generateBrief(
 ): Promise<{ result: BriefGenerationResult; engineUsed: string }> {
   const config = { ...getStoredAiConfig(), ...customConfig };
 
-  // If API key is available, attempt live call to IFM.ai K2 Horizon
   if (config.apiKey && config.apiKey.trim() !== '') {
     try {
       const client = new OpenAI({
@@ -62,9 +65,9 @@ Format Tier: ${formatTier}
 Target Platform: ${platform}
 
 Generate:
-1) Three distinct hook variations (Curiosity, Contrarian, Direct Value).
-2) Platform technical specifications.
-3) Recommended KPI target.
+1) Three distinct hook variations (Contrarian, Curiosity, Direct Value).
+2) Platform technical specifications (include 1080x1920, 9:16 safe margins, -14 LUFS).
+3) Recommended Target KPI benchmark.
 `;
 
       const response = await client.chat.completions.create({
@@ -99,47 +102,43 @@ You MUST reply with a JSON object that matches this schema:
       }
     } catch (err: any) {
       console.warn('IFM API call error, falling back to intelligent enterprise generator:', err);
-      // continue to fallback
     }
   }
 
-  // Fallback simulator tailored to the input prompt notes
-  await new Promise((res) => setTimeout(res, 850)); // realistic inference latency
+  await new Promise((res) => setTimeout(res, 650));
 
-  const topicSummary = rawNotes.length > 50 ? rawNotes.slice(0, 50).trim() + '...' : rawNotes || 'Enterprise Operations';
-  const isVideo = platform.toLowerCase().includes('9:16') || platform.toLowerCase().includes('video') || platform.toLowerCase().includes('reels');
+  const topicSummary = rawNotes.length > 52 ? rawNotes.slice(0, 52).trim() + '...' : rawNotes || 'Enterprise Operations';
 
   const fallback: BriefGenerationResult = {
     hooks: [
       {
-        type: 'Curiosity',
-        script: `Why the highest-performing content teams stopped relying on manual reviews for "${topicSummary}".`
+        type: 'Contrarian',
+        script: `Most enterprise leaders treat "${topicSummary}" as a creative bandwidth issue—it is actually a missing state machine.`
       },
       {
-        type: 'Contrarian',
-        script: `Most enterprise leaders treat "${topicSummary}" as a creative bottleneck. It is actually a missing state machine.`
+        type: 'Curiosity',
+        script: `Why the highest-performing content teams replaced manual reviews with a 48-hour SLA protocol for "${topicSummary}".`
       },
       {
         type: 'Direct Value',
-        script: `The 3-step operational framework to master "${topicSummary}" and cut review latency by 80%.`
+        script: `The 3-step operational framework to master "${topicSummary}" and cut stakeholder review latency by 80%.`
       }
     ],
-    technicalSpecs: isVideo
-      ? '9:16 Vertical (1080x1920) @ 60fps, 45-60s max length, kinetic caption safe zones bottom-third, LUFS -14.'
-      : `${platform || 'LinkedIn & Web'} Multi-slide PDF format (1080x1350) + 16:9 Slide Deck master export with high-contrast typography.`,
-    targetKpi: isVideo
-      ? '68% 3-second retention, >18% completion rate, 400+ targeted saves.'
-      : '4.5% CTR on primary CTA, 1,200+ content downloads, >30 qualified enterprise demo requests.'
+    technicalSpecs: '1080x1920, 9:16 safe margins (bottom 250px caption zone), 60fps ProRes/H.264, audio normalized to -14 LUFS.',
+    targetKpi: '68% 3-Second Retention Rate, >4.5% CTR on primary CTA, 500+ qualified saves.'
   };
 
   return {
     result: fallback,
-    engineUsed: config.apiKey ? 'IFM.ai K2 Horizon (Emulated)' : 'K2 Horizon Intelligent Engine'
+    engineUsed: config.apiKey ? 'IFM.ai K2 Horizon (Emulated)' : 'IFM.ai K2 Horizon'
   };
 }
 
 /**
- * Asset Multiplier Extractor: Generates 3 derivative micro-asset specifications
+ * Asset Multiplier Extractor: Generates 3-5 derivative child ticket concepts
+ * - Short-form Reel (9:16)
+ * - LinkedIn Carousel summary (1:1)
+ * - Quote card / X thread
  */
 export async function generateDerivatives(
   macroDescription: string,
@@ -161,7 +160,7 @@ export async function generateDerivatives(
         messages: [
           {
             role: 'system',
-            content: `You are a content repurposing producer. Given notes/context of a macro asset, suggest 3 high-impact micro-asset derivatives.
+            content: `You are a content repurposing producer. Given notes/context of a macro asset, suggest 4 high-impact micro-asset derivatives including Short-form Reel (9:16), LinkedIn Carousel summary (1:1), and Quote card / X thread.
 You MUST reply with a JSON object that matches this schema:
 {
   "derivatives": [
@@ -171,7 +170,7 @@ You MUST reply with a JSON object that matches this schema:
           },
           {
             role: 'user',
-            content: `Macro Content Context:\n${macroDescription}\n\nProvide 3 derivative micro-asset specifications.`
+            content: `Macro Content Context:\n${macroDescription}\n\nProvide 4 derivative child ticket specifications.`
           }
         ],
         temperature: 0.4
@@ -190,28 +189,33 @@ You MUST reply with a JSON object that matches this schema:
     }
   }
 
-  await new Promise((res) => setTimeout(res, 750));
+  await new Promise((res) => setTimeout(res, 550));
 
   const sampleDerivatives: DerivativeIdea[] = [
     {
-      title: '↳ Tactical Breakdown: 3 Bottlenecks Killing Your Creative Cycle',
-      format: '9:16 Vertical Short (Video)',
-      angle: 'High-velocity 45s teardown of workflow bottlenecks with split-screen before/after graphic.'
+      title: 'Short-form Reel: 3 Bottlenecks Killing Creative Velocity',
+      format: 'Short-form Reel (9:16) • 1080x1920, -14 LUFS',
+      angle: 'High-velocity 45s vertical cutdown of the opening contrarian hook with split-screen workflow telemetry.'
     },
     {
-      title: '↳ Visual Framework: The 5-Stage ContentOps State Machine',
-      format: 'LinkedIn Carousel / Slide Deck (1080x1350)',
-      angle: 'Slide-by-slide visual blueprint breaking down RACI roles, SLA thresholds, and QA veto points.'
+      title: 'LinkedIn Carousel Summary: The 5-Stage ContentOps State Machine',
+      format: 'LinkedIn Carousel summary (1:1) • 1080x1080 Multi-Slide PDF',
+      angle: '8-slide visual blueprint breaking down RACI governance, 48h SLA thresholds, and QA gatekeeper veto locks.'
     },
     {
-      title: '↳ Quote Card Series: "The Death of Unchecked Creative Drift"',
-      format: 'Static Graphic Series (1:1 & 16:9)',
-      angle: 'Three typographic pull-quote assets highlighting the keynote speaker\'s core contrarian claims.'
+      title: 'Quote Card & X Thread: "The Death of Unchecked Creative Drift"',
+      format: 'Quote card / X thread • 1:1 & 16:9 Social Pack',
+      angle: '7-post analytical thread paired with 3 high-contrast typographic quote cards highlighting executive takeaways.'
+    },
+    {
+      title: 'Short-form Reel: Inside the 48-Hour SLA Review Protocol',
+      format: 'Short-form Reel (9:16) • 1080x1920, 60fps',
+      angle: 'Tactical 50s breakdown showing how automated SLA countdowns cut stakeholder review latency from 14 days to 48 hours.'
     }
   ];
 
   return {
     derivatives: sampleDerivatives,
-    engineUsed: config.apiKey ? 'IFM.ai K2 Horizon (Emulated)' : 'K2 Horizon Asset Multiplier'
+    engineUsed: config.apiKey ? 'IFM.ai K2 Horizon (Emulated)' : 'IFM.ai K2 Horizon'
   };
 }

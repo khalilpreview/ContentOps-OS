@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Plus, FileText, Cpu, ArrowRight } from 'lucide-react';
+import { X, Sparkles, Plus } from 'lucide-react';
 import { ContentAsset, FormatTier, PillarType, Priority, User } from '../types';
 import { generateBrief } from '../lib/aiService';
 
@@ -21,7 +21,7 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
   const [title, setTitle] = useState('');
   const [pillar, setPillar] = useState<PillarType>('STRATEGY_SERIES');
   const [formatTier, setFormatTier] = useState<FormatTier>('HUB');
-  const [priority, setPriority] = useState<Priority>('MEDIUM');
+  const [priority] = useState<Priority>('HIGH');
   const [assignedToId, setAssignedToId] = useState(currentUser.id);
   const [rawIntakeNotes, setRawIntakeNotes] = useState('');
   const [hookStrategy, setHookStrategy] = useState('');
@@ -32,18 +32,18 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
   if (!isOpen) return null;
 
   const handleAiAutoFill = async () => {
+    const context = rawIntakeNotes.trim() || title.trim() || 'Enterprise ContentOps Launch Campaign';
     if (!rawIntakeNotes.trim()) {
-      alert('Please enter some intake notes first to generate with K2 Horizon.');
-      return;
+      setRawIntakeNotes(context);
     }
 
     setIsGenerating(true);
     try {
-      const platformTarget = platformSpecs || (formatTier === 'HERO' ? 'Keynote & 16:9 Master' : '9:16 Vertical Video');
-      const { result } = await generateBrief(rawIntakeNotes, formatTier, platformTarget);
+      const platformTarget = platformSpecs || '1080x1920, 9:16 safe margins, -14 LUFS';
+      const { result } = await generateBrief(context, formatTier, platformTarget);
 
       if (result.hooks && result.hooks.length > 0) {
-        setHookStrategy(`${result.hooks[0].type}: ${result.hooks[0].script}`);
+        setHookStrategy(`${result.hooks[0].type}: "${result.hooks[0].script}"`);
       }
       if (result.technicalSpecs) {
         setPlatformSpecs(result.technicalSpecs);
@@ -51,8 +51,8 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
       if (result.targetKpi) {
         setTargetKpi(result.targetKpi);
       }
-      if (!title) {
-        setTitle(rawIntakeNotes.slice(0, 45).trim() + ' (Brief)');
+      if (!title.trim()) {
+        setTitle(context.slice(0, 45).trim() + ' (Brief)');
       }
     } catch (err: any) {
       console.error(err);
@@ -63,10 +63,7 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      alert('Please provide a title for the new asset.');
-      return;
-    }
+    if (!title.trim()) return;
 
     const newAsset: ContentAsset = {
       id: `asset-${Date.now()}`,
@@ -87,6 +84,7 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
       qaRightsCleared: false,
       qaGatekeeperSigned: false,
       deliverableUrl: null,
+      attachmentCount: 0,
       isWinningFormat: false,
       paidEligible: false,
       createdById: currentUser.id,
@@ -96,40 +94,46 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
     };
 
     onCreateAsset(newAsset);
+    setTitle('');
+    setRawIntakeNotes('');
+    setHookStrategy('');
+    setPlatformSpecs('');
+    setTargetKpi('');
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-      <div className="bg-[#13151c] border border-[#252837] rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col text-white">
+      <div className="bg-[#181E2C] border border-white/[0.07] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col text-white">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-[#252837] bg-[#181a24] flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-white/[0.07] bg-[#121620] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-[#4ff8ac]/15 text-[#4ff8ac] flex items-center justify-center border border-[#4ff8ac]/30">
+            <div className="h-8 w-8 rounded-lg bg-[#00E599]/15 text-[#00E599] flex items-center justify-center border border-[#00E599]/40">
               <Plus className="h-4 w-4" />
             </div>
             <div>
               <h2 className="text-sm font-bold text-white">
                 Create Content Asset Brief
               </h2>
-              <p className="text-xs text-[#8b93a7]">
-                Initializes ticket in Drafting & Briefs (Stage 1)
+              <p className="text-xs text-[#8F9CAE]">
+                Initializes ticket in Drafting &amp; Briefs (Stage 1)
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl bg-[#10121a] hover:bg-[#1e212e] text-[#8b93a7] hover:text-white border border-[#252837] transition-colors"
+            className="p-1.5 rounded-lg bg-[#181E2C] hover:bg-[#1E2536] text-[#8F9CAE] hover:text-white border border-white/[0.07] transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto max-h-[80vh]">
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto max-h-[80vh] bg-[#0B0E14]">
           <div>
-            <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-[#8F9CAE] uppercase tracking-wider mb-1">
               Asset Title *
             </label>
             <input
@@ -138,52 +142,52 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Q4 Growth Roadmap: Automated Media Operations"
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3.5 py-2 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg px-3.5 py-2 text-xs text-white focus:outline-none"
             />
           </div>
 
-          {/* Format Tier, Pillar, Priority */}
+          {/* Format Tier, Pillar, Assignee */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs text-zinc-400 font-medium mb-1">
+              <label className="block text-xs text-[#8F9CAE] font-medium mb-1">
                 Format Tier
               </label>
               <select
                 value={formatTier}
                 onChange={(e) => setFormatTier(e.target.value as FormatTier)}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
               >
                 <option value="HERO">HERO (Macro)</option>
                 <option value="HUB">HUB (Series)</option>
-                <option value="HYGIENE">HYGIENE (Search)</option>
+                <option value="HYGIENE">HYGIENE (Evergreen)</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs text-zinc-400 font-medium mb-1">
+              <label className="block text-xs text-[#8F9CAE] font-medium mb-1">
                 Strategic Pillar
               </label>
               <select
                 value={pillar}
                 onChange={(e) => setPillar(e.target.value as PillarType)}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
               >
                 <option value="STRATEGY_SERIES">Strategy Series</option>
                 <option value="CONTENT_OPS">ContentOps</option>
                 <option value="CROSS_FUNCTIONAL">Cross-Functional</option>
                 <option value="BRAND_QA">Brand QA</option>
-                <option value="INTELLIGENCE_OPTIMIZATION">Intel & AI Opt</option>
+                <option value="INTELLIGENCE_OPTIMIZATION">Intel &amp; AI Opt</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs text-zinc-400 font-medium mb-1">
+              <label className="block text-xs text-[#8F9CAE] font-medium mb-1">
                 Assignee
               </label>
               <select
                 value={assignedToId}
                 onChange={(e) => setAssignedToId(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
               >
                 {allUsers.map((u) => (
                   <option key={u.id} value={u.id}>
@@ -194,87 +198,87 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
             </div>
           </div>
 
-          {/* Intake Notes + AI Trigger */}
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3.5 space-y-2">
+          {/* Raw Campaign Notes / Context + K2 Horizon Trigger */}
+          <div className="bg-[#121620] border border-white/[0.08] rounded-xl p-3.5 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-zinc-200">
-                Campaign Intake Notes
+              <label className="text-xs font-semibold text-white">
+                Raw Campaign Notes / Context
               </label>
               <button
                 type="button"
                 onClick={handleAiAutoFill}
                 disabled={isGenerating}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-all disabled:opacity-50"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] transition-all disabled:opacity-50 cursor-pointer"
               >
                 <Sparkles className={`h-3 w-3 ${isGenerating ? 'animate-spin' : ''}`} />
-                <span>{isGenerating ? 'Synthesizing...' : '✨ K2 Horizon Auto-Fill'}</span>
+                <span>{isGenerating ? 'Generating...' : '✨ Generate with K2 Horizon'}</span>
               </button>
             </div>
             <textarea
               rows={2}
               value={rawIntakeNotes}
               onChange={(e) => setRawIntakeNotes(e.target.value)}
-              placeholder="Rough bullet points or notes..."
-              className="w-full bg-zinc-950 border border-zinc-700/80 rounded-lg p-2 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="Rough campaign bullet points or executive context..."
+              className="w-full bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg p-2 text-xs text-white placeholder-[#8F9CAE] focus:outline-none"
             />
           </div>
 
           {/* Hook Strategy */}
           <div>
-            <label className="block text-xs text-zinc-400 font-medium mb-1">
+            <label className="block text-xs text-[#8F9CAE] font-medium mb-1">
               Hook Strategy (First 3s)
             </label>
             <input
               type="text"
               value={hookStrategy}
               onChange={(e) => setHookStrategy(e.target.value)}
-              placeholder="e.g. Curiosity: 'Why enterprise content teams fail at scaling without a state machine...'"
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="e.g. Contrarian: 'The enterprise content backlog is not a bandwidth issue...'"
+              className="w-full bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
             />
           </div>
 
           {/* Platform Specs */}
           <div>
-            <label className="block text-xs text-zinc-400 font-medium mb-1">
+            <label className="block text-xs text-[#8F9CAE] font-medium mb-1">
               Platform Technical Specs
             </label>
             <input
               type="text"
               value={platformSpecs}
               onChange={(e) => setPlatformSpecs(e.target.value)}
-              placeholder="e.g. 9:16 vertical (1080x1920) 60s max"
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="e.g. 1080x1920, 9:16 safe margins, -14 LUFS"
+              className="w-full bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none"
             />
           </div>
 
           {/* Target KPI */}
           <div>
-            <label className="block text-xs text-zinc-400 font-medium mb-1">
-              Target KPI
+            <label className="block text-xs text-[#8F9CAE] font-medium mb-1">
+              Target KPI Benchmark
             </label>
             <input
               type="text"
               value={targetKpi}
               onChange={(e) => setTargetKpi(e.target.value)}
-              placeholder="e.g. 65% 3s Retention, CTR > 2%"
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="e.g. 68% 3s Retention, CTR > 2%"
+              className="w-full bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none"
             />
           </div>
 
           {/* Submit button */}
-          <div className="flex items-center justify-end gap-2 pt-3.5 border-t border-[#252837]">
+          <div className="flex items-center justify-end gap-2 pt-3.5 border-t border-white/[0.07]">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#10121a] hover:bg-[#1e212e] text-[#8b93a7] hover:text-white border border-[#252837] transition-colors"
+              className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-[#181E2C] hover:bg-[#1E2536] text-[#8F9CAE] hover:text-white border border-white/[0.07] transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl text-xs font-extrabold bg-[#4ff8ac] hover:bg-[#38ef98] text-[#0f1118] shadow-md shadow-[#4ff8ac]/20 flex items-center gap-1.5 transition-colors"
+              className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#00E599] hover:bg-[#00cc88] text-[#0B0E14] flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4 stroke-[2.5]" />
               <span>Create Brief</span>
             </button>
           </div>

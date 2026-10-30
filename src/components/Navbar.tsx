@@ -1,15 +1,13 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Sparkles, 
   Plus, 
   Settings, 
   ChevronDown, 
   Clock, 
-  Cpu, 
   LogOut,
-  SlidersHorizontal,
-  Bell,
-  Search
+  ShieldCheck,
+  Check,
+  UserCheck
 } from 'lucide-react';
 import { User, UserRole } from '../types';
 import { BrandLogo } from './BrandLogo';
@@ -28,6 +26,7 @@ interface NavbarProps {
   onSignOut?: () => void;
   isAuthenticated?: boolean;
   onOpenAuthModal?: () => void;
+  onReplayLoader?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -41,132 +40,207 @@ export const Navbar: React.FC<NavbarProps> = ({
   breachedCount,
   onSignOut,
   isAuthenticated = true,
-  onOpenAuthModal
+  onOpenAuthModal,
+  onReplayLoader
 }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const capacityPercent = Math.min(100, Math.round((activeCount / maxCapacity) * 100));
 
-  const roleLabels: Record<UserRole, { label: string; badge: string; color: string }> = {
+  const roleLabels: Record<UserRole, { label: string; badge: string; dotColor: string; textColor: string }> = {
     CONTENT_MANAGER: {
       label: 'Content Manager',
-      badge: 'Admin & QA Gatekeeper',
-      color: 'bg-[#4ff8ac]'
+      badge: 'Can Sign QA & Approve',
+      dotColor: 'bg-[#00E599]',
+      textColor: 'text-[#00E599]'
     },
     CREATIVE_SPECIALIST: {
       label: 'Creative Specialist',
-      badge: 'Production Pod Doer',
-      color: 'bg-blue-400'
+      badge: 'QA Final Sign-off Locked',
+      dotColor: 'bg-[#F5A524]',
+      textColor: 'text-[#F5A524]'
     },
     STAKEHOLDER: {
       label: 'Stakeholder',
-      badge: 'SLA Reviewer',
-      color: 'bg-purple-400'
+      badge: 'SLA Reviewer • QA Locked',
+      dotColor: 'bg-sky-400',
+      textColor: 'text-sky-400'
     },
     DISTRIBUTION_LEAD: {
       label: 'Distribution Lead',
-      badge: 'Publishing & Growth',
-      color: 'bg-amber-400'
+      badge: 'Syndication & Growth',
+      dotColor: 'bg-purple-400',
+      textColor: 'text-purple-400'
     }
   };
 
+  const activeRoleMeta = roleLabels[currentUser.role] || roleLabels.CONTENT_MANAGER;
+
   return (
-    <header className="sticky top-0 z-30 bg-[#0f1118]/95 backdrop-blur-md border-b border-[#252837] text-zinc-100 px-4 lg:px-6 py-2.5 select-none">
+    <header className="sticky top-0 z-30 bg-[#121620]/95 backdrop-blur-md border-b border-white/[0.08] text-white px-4 lg:px-6 py-2.5 select-none">
       <div className="flex items-center justify-between gap-3">
-        {/* Left: Brand Logo using user's exact SVG + ContentOps OS */}
+        {/* Left: Thrill Brand Logo + Active Production Pipeline Breadcrumb */}
         <div className="flex items-center gap-3">
-          <BrandLogo size="md" />
-          <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#181a24] border border-[#252837] text-[10px] text-[#4ff8ac] font-mono">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#4ff8ac] animate-pulse" />
-            <span>K2 Horizon Online</span>
+          <button
+            type="button"
+            onClick={onReplayLoader}
+            className="text-left focus:outline-none cursor-pointer group"
+            title="Replay Thrill Liquid Loading Screen"
+          >
+            <BrandLogo size="md" />
+          </button>
+          <div className="hidden md:flex items-center gap-2 text-xs text-[#8F9CAE] pl-2 border-l border-white/10">
+            <span className="font-medium text-white">Active Production Pipeline</span>
+          </div>
+          <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#181E2C] border border-white/[0.07] text-[11px] text-[#00E599] font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#00E599]" />
+            <span>IFM K2 Horizon</span>
           </div>
         </div>
 
-        {/* Center: Capacity bar & SLA breach ticker */}
+        {/* Center: Capacity bar & SLA breach alert */}
         <div className="hidden lg:flex items-center gap-3">
-          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-[#181a24] border border-[#252837] text-xs">
-            <span className="text-[#8b93a7] font-medium text-[11px]">Pipeline Volume:</span>
-            <div className="w-24 h-2 bg-[#10121a] rounded-full overflow-hidden border border-[#252837]">
+          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-[#181E2C] border border-white/[0.07] text-xs">
+            <span className="text-[#8F9CAE] font-medium text-[11px]">Active Sprint:</span>
+            <div className="w-20 h-1.5 bg-[#0B0E14] rounded-full overflow-hidden border border-white/[0.07]">
               <div 
                 className={`h-full transition-all duration-300 ${
-                  capacityPercent > 85 ? 'bg-rose-500' : capacityPercent > 60 ? 'bg-amber-400' : 'bg-[#4ff8ac]'
+                  capacityPercent > 85 ? 'bg-[#FF4B55]' : capacityPercent > 65 ? 'bg-[#F5A524]' : 'bg-[#00E599]'
                 }`}
                 style={{ width: `${capacityPercent}%` }}
               />
             </div>
-            <span className="font-mono text-zinc-200 text-[11px]">
-              {activeCount}/{maxCapacity}
+            <span className="font-mono text-white font-semibold text-[11px] tabular-nums">
+              {activeCount} / {maxCapacity} Capacity
             </span>
           </div>
 
           {breachedCount > 0 && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-950/80 border border-rose-600/50 text-rose-300 text-xs font-semibold animate-pulse">
-              <Clock className="h-3.5 w-3.5 text-rose-400" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FF4B55]/15 border border-[#FF4B55]/40 text-[#FF4B55] text-xs font-semibold animate-pulse tabular-nums">
+              <Clock className="h-3.5 w-3.5 text-[#FF4B55]" />
               <span>{breachedCount} SLA Breached</span>
             </div>
           )}
         </div>
 
-        {/* Right: Persona dropdown, Notification squircle, Glowing Mint CTA Button, Settings, Sign Out */}
+        {/* Right: RACI Role Switcher Avatar Dropdown, + New Brief Button, Settings, Sign Out */}
         <div className="flex items-center gap-2 sm:gap-2.5">
-          {/* Persona selector styled like wallet balance in reference */}
-          <div className="relative group">
-            <div className="relative">
-              <select
-                aria-label="Select Active Persona"
-                value={currentUser.id}
-                onChange={(e) => {
-                  const u = allUsers.find((x) => x.id === e.target.value);
-                  if (u) onSelectUser(u);
-                }}
-                className="appearance-none bg-[#181a24] hover:bg-[#1d202d] border border-[#252837] hover:border-[#4ff8ac]/40 rounded-xl pl-8 pr-7 py-2 text-xs text-zinc-100 font-semibold focus:outline-none focus:ring-1 focus:ring-[#4ff8ac] cursor-pointer shadow-sm transition-colors"
-              >
-                {allUsers.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name} ({roleLabels[u.role]?.label || u.role})
-                  </option>
-                ))}
-              </select>
-              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
-                <span className={`inline-block w-2.5 h-2.5 rounded-full ${roleLabels[currentUser.role]?.color || 'bg-[#4ff8ac]'}`} />
+          {/* Interactive RACI Role Simulator Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsDropdownOpen((prev) => !prev)}
+              aria-label="Switch Active RACI Role"
+              aria-expanded={isDropdownOpen}
+              className="flex items-center gap-2.5 bg-[#181E2C] hover:bg-[#1E2536] border border-white/[0.07] hover:border-[#00E599]/40 rounded-lg px-2.5 py-1.5 text-xs text-white transition-all cursor-pointer"
+            >
+              {currentUser.avatarUrl ? (
+                <img
+                  src={currentUser.avatarUrl}
+                  alt={currentUser.name}
+                  className="h-6 w-6 rounded-full object-cover ring-1 ring-white/15"
+                />
+              ) : (
+                <div className="h-6 w-6 rounded-full bg-[#00E599]/20 text-[#00E599] flex items-center justify-center font-bold text-[11px]">
+                  {currentUser.name.charAt(0)}
+                </div>
+              )}
+              <div className="text-left hidden sm:block">
+                <div className="flex items-center gap-1.5 leading-none">
+                  <span className="font-semibold text-white text-xs">{currentUser.name}</span>
+                  <span className={`inline-block w-2 h-2 rounded-full ${activeRoleMeta.dotColor}`} />
+                </div>
+                <span className="text-[10px] text-[#8F9CAE] block mt-0.5 leading-none">
+                  {activeRoleMeta.label}
+                </span>
               </div>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8b93a7] pointer-events-none" />
-            </div>
-          </div>
+              <ChevronDown className={`h-3.5 w-3.5 text-[#8F9CAE] transition-transform ${isDropdownOpen ? 'rotate-180 text-white' : ''}`} />
+            </button>
 
-          {/* Primary Action Button (Matches electric mint WALLET button from screenshot!) */}
-          <button
-            onClick={onOpenNewAsset}
-            className="flex items-center gap-1.5 bg-[#4ff8ac] hover:bg-[#38ef98] text-[#0f1118] px-3.5 py-2 rounded-xl text-xs font-extrabold shadow-lg shadow-[#4ff8ac]/20 transition-all active:scale-95 cursor-pointer"
-            aria-label="Create New Content Asset Brief"
-          >
-            <Plus className="h-3.5 w-3.5 stroke-[3]" />
-            <span>New Brief</span>
-          </button>
+            {/* Dropdown Menu */}
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-72 rounded-xl bg-[#181E2C] border border-white/10 shadow-2xl py-2 z-50">
+                <div className="px-3 py-1.5 border-b border-white/[0.07] flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8F9CAE] flex items-center gap-1.5">
+                    <UserCheck className="h-3.5 w-3.5 text-[#00E599]" />
+                    <span>RACI Role Simulator</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-[#00E599]">Live Permissions</span>
+                </div>
+
+                <div className="py-1 divide-y divide-white/[0.04]">
+                  {allUsers.map((u) => {
+                    const meta = roleLabels[u.role] || roleLabels.CONTENT_MANAGER;
+                    const isSelected = u.id === currentUser.id;
+                    return (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => {
+                          onSelectUser(u);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2.5 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                          isSelected ? 'bg-[#00E599]/10' : 'hover:bg-[#1E2536]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {u.avatarUrl ? (
+                            <img
+                              src={u.avatarUrl}
+                              alt={u.name}
+                              className="h-7 w-7 rounded-full object-cover ring-1 ring-white/15 shrink-0"
+                            />
+                          ) : (
+                            <div className="h-7 w-7 rounded-full bg-[#121620] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                              {u.name.charAt(0)}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-white truncate flex items-center gap-1.5">
+                              <span>{u.name}</span>
+                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dotColor}`} />
+                            </div>
+                            <div className="text-[11px] text-[#8F9CAE] truncate">
+                              {meta.label} • <span className={meta.textColor}>{meta.badge}</span>
+                            </div>
+                          </div>
+                        </div>
+                        {isSelected && <Check className="h-4 w-4 text-[#00E599] shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Settings Button */}
           <button
             onClick={onOpenAiConfig}
-            className="h-9 w-9 rounded-xl bg-[#181a24] hover:bg-[#202330] border border-[#252837] text-[#8b93a7] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="h-9 w-9 rounded-lg bg-[#181E2C] hover:bg-[#1E2536] border border-white/[0.07] text-[#8F9CAE] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
             title="IFM.ai K2 Horizon & Engine Settings"
             aria-label="Engine Settings"
           >
             <Settings className="h-4 w-4" />
           </button>
 
-          {/* Sign In button if unauthenticated */}
-          {!isAuthenticated && onOpenAuthModal && (
-            <button
-              onClick={onOpenAuthModal}
-              className="py-2 px-3.5 rounded-xl bg-white hover:bg-slate-200 text-[#0f1118] text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
-            >
-              Sign In
-            </button>
-          )}
-
-          {/* Sign Out Button if authenticated */}
+          {/* Sign Out Button */}
           {isAuthenticated && onSignOut && (
             <button
               onClick={onSignOut}
-              className="h-9 w-9 rounded-xl bg-[#181a24] hover:bg-rose-950/60 border border-[#252837] hover:border-rose-600/50 text-[#8b93a7] hover:text-rose-300 flex items-center justify-center transition-colors cursor-pointer"
+              className="h-9 w-9 rounded-lg bg-[#181E2C] hover:bg-[#FF4B55]/15 border border-white/[0.07] hover:border-[#FF4B55]/40 text-[#8F9CAE] hover:text-[#FF4B55] flex items-center justify-center transition-colors cursor-pointer"
               title={`Sign Out (${currentUser.email})`}
               aria-label="Sign Out"
             >

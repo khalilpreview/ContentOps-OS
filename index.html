@@ -9,6 +9,41 @@
     <meta property="og:description" content="Enterprise Content Operations platform with deterministic state machine, RACI gatekeeping, dynamic SLA clocks, and IFM.ai K2 Horizon auto-briefing and asset multiplier." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      (function () {
+        const NativeWebSocket = window.WebSocket;
+        if (!NativeWebSocket) return;
+        const PatchedWebSocket = function (url, protocols) {
+          if (protocols === 'vite-hmr' || protocols === 'vite-ping') {
+            const dummy = new EventTarget();
+            dummy.url = String(url || '');
+            dummy.readyState = 1;
+            dummy.OPEN = 1;
+            dummy.CONNECTING = 0;
+            dummy.CLOSING = 2;
+            dummy.CLOSED = 3;
+            dummy.protocol = String(protocols || '');
+            dummy.extensions = '';
+            dummy.bufferedAmount = 0;
+            dummy.binaryType = 'blob';
+            dummy.send = function () {};
+            dummy.close = function () {
+              dummy.readyState = 3;
+            };
+            return dummy;
+          }
+          return protocols !== undefined
+            ? new NativeWebSocket(url, protocols)
+            : new NativeWebSocket(url);
+        };
+        PatchedWebSocket.prototype = NativeWebSocket.prototype;
+        PatchedWebSocket.CONNECTING = NativeWebSocket.CONNECTING;
+        PatchedWebSocket.OPEN = NativeWebSocket.OPEN;
+        PatchedWebSocket.CLOSING = NativeWebSocket.CLOSING;
+        PatchedWebSocket.CLOSED = NativeWebSocket.CLOSED;
+        window.WebSocket = PatchedWebSocket;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

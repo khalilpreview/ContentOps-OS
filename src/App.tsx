@@ -6,59 +6,49 @@ import { AssetMultiplierModal } from './components/AssetMultiplierModal';
 import { NewAssetModal } from './components/NewAssetModal';
 import { AiConfigModal } from './components/AiConfigModal';
 import { GuardBlockModal } from './components/GuardBlockModal';
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
+import { ThrillLoadingScreen } from './components/ThrillLoadingScreen';
 import { AuthPage } from './components/AuthPage';
 import { Sidebar } from './components/Sidebar';
-import { AssetStatus, ContentAsset, FormatTier, PillarType, User } from './types';
+import { FloatingCopilot } from './components/copilot/FloatingCopilot';
+import { useCopilotContext } from './hooks/useCopilotContext';
+import { AssetStatus, ContentAsset, FormatTier, PillarType, QuickFilterType, User } from './types';
 import { INITIAL_ASSETS, SEED_USERS } from './lib/seedData';
 import { validateStatusTransition } from './lib/stateMachine';
-import { getStoredSession, clearSession } from './lib/auth';
-
-const ASSETS_STORAGE_KEY = 'contentops_assets_data';
-const USER_STORAGE_KEY = 'contentops_active_user';
+import { calculateSla } from './lib/sla';
+import { clearSession } from './lib/auth';
+import {
+  ASSETS_STORAGE_KEY,
+  USER_STORAGE_KEY,
+  StorageMigrationReport,
+  validateAndMigrateStorage
+} from './lib/storageMigration';
+import { ShieldCheck, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function App() {
-  // Authentication session state
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return getStoredSession() !== null;
-  });
-  const [showAuthModal, setShowAuthModal] = useState<boolean>(() => {
-    return getStoredSession() === null;
-  });
+  // Run local storage structural validation & automatic in-place migration once on initialization
+  const [initialStorage] = useState(() => validateAndMigrateStorage());
+  const [migrationReport, setMigrationReport] = useState<StorageMigrationReport | null>(() =>
+    initialStorage.report.hadDiscrepancies ? initialStorage.report : null
+  );
+  const [showMigrationDetails, setShowMigrationDetails] = useState<boolean>(false);
 
-  // Load users & initial state
+  // Default to authenticated session with Elena Vance so the board is immediately interactive
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+
   const [allUsers] = useState<User[]>(SEED_USERS);
-  const [currentUser, setCurrentUser] = useState<User>(() => {
-    try {
-      const session = getStoredSession();
-      if (session?.user) return session.user;
-      const savedUserId = localStorage.getItem(USER_STORAGE_KEY);
-      if (savedUserId) {
-        const found = SEED_USERS.find((u) => u.id === savedUserId);
-        if (found) return found;
-      }
-    } catch {
-      // ignore
-    }
-    return SEED_USERS[0]; // Content Manager by default
-  });
-
-  const [assets, setAssets] = useState<ContentAsset[]>(() => {
-    try {
-      const saved = localStorage.getItem(ASSETS_STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch {
-      // ignore
-    }
-    return INITIAL_ASSETS;
-  });
+  const [currentUser, setCurrentUser] = useState<User>(initialStorage.currentUser);
+  const [assets, setAssets] = useState<ContentAsset[]>(initialStorage.assets);
 
   // Modals & Drawers
   const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<ContentAsset | null>(null);
   const [selectedAssetForMultiplier, setSelectedAssetForMultiplier] = useState<ContentAsset | null>(null);
   const [isNewAssetOpen, setIsNewAssetOpen] = useState(false);
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(false);
+  const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
+  const [isBootLoading, setIsBootLoading] = useState<boolean>(true);
+  const [loaderMode, setLoaderMode] = useState<'auto' | 'preview'>('auto');
 
   // Guard Block modal state
   const [guardBlock, setGuardBlock] = useState<{
@@ -78,6 +68,7 @@ export default function App() {
   const [selectedPillar, setSelectedPillar] = useState<PillarType | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterOnlySla, setFilterOnlySla] = useState(false);
+  const [quickFilter, setQuickFilter] = useState<QuickFilterType>('NONE');
 
   const handleChangeView = (view: 'pipeline' | 'sla' | 'multiplier' | 'archive') => {
     setCurrentView(view);
@@ -97,6 +88,137 @@ export default function App() {
       setFilterOnlySla(false);
     }
   };
+
+  // Global Keyboard Shortcuts ('N' -> New Asset, 'S' -> Focus Search, 'Cmd+/' -> Help Overlay, etc.)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // 1. Toggle hidden Keyboard Shortcuts Help Overlay on Cmd+/ or Ctrl+/
+      if ((e.metaKey || e.ctrlKey) && (e.key === '/' || e.key === '?' || e.code === 'Slash')) {
+        e.preventDefault();
+        setIsShortcutsHelpOpen((prev) => !prev);
+        return;
+      }
+
+      // 2. Escape closes active overlays/modals in priority order
+      if (e.key === 'Escape') {
+        if (isShortcutsHelpOpen) {
+          setIsShortcutsHelpOpen(false);
+          return;
+        }
+        if (guardBlock.isOpen) {
+          setGuardBlock({ isOpen: false, reason: '' });
+          return;
+        }
+        if (isAiConfigOpen) {
+          setIsAiConfigOpen(false);
+          return;
+        }
+        if (isNewAssetOpen) {
+          setIsNewAssetOpen(false);
+          return;
+        }
+        if (selectedAssetForMultiplier) {
+          setSelectedAssetForMultiplier(null);
+          return;
+        }
+        if (selectedAssetForDetail) {
+          setSelectedAssetForDetail(null);
+          return;
+        }
+        if (showAuthModal) {
+          setShowAuthModal(false);
+          return;
+        }
+        return;
+      }
+
+      // 3. Ignore single-key shortcuts when typing inside inputs, textareas, selects, or contenteditable
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tagName = target.tagName.toLowerCase();
+        const isEditable =
+          tagName === 'input' ||
+          tagName === 'textarea' ||
+          tagName === 'select' ||
+          target.isContentEditable;
+        if (isEditable) return;
+      }
+
+      // Ignore if modifier keys are held
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      // Allow '?' to toggle help overlay even if another modal isn't blocking
+      if (e.key === '?') {
+        e.preventDefault();
+        setIsShortcutsHelpOpen((prev) => !prev);
+        return;
+      }
+
+      // Do not trigger board-level single-key shortcuts while a modal is open
+      const anyModalOpen =
+        isShortcutsHelpOpen ||
+        isNewAssetOpen ||
+        isAiConfigOpen ||
+        Boolean(selectedAssetForDetail) ||
+        Boolean(selectedAssetForMultiplier) ||
+        guardBlock.isOpen ||
+        showAuthModal;
+      if (anyModalOpen) return;
+
+      const lowerKey = e.key.toLowerCase();
+
+      if (lowerKey === 'n') {
+        e.preventDefault();
+        setIsNewAssetOpen(true);
+      } else if (lowerKey === 's') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('contentops:focus-search'));
+      } else if (lowerKey === 'm') {
+        e.preventDefault();
+        const heroAsset = assets.find((a) => a.formatTier === 'HERO');
+        if (heroAsset) {
+          setSelectedAssetForMultiplier(heroAsset);
+        } else {
+          setIsNewAssetOpen(true);
+        }
+      } else if (e.key === '1') {
+        e.preventDefault();
+        setSelectedTier('ALL');
+        setFilterOnlySla(false);
+        setQuickFilter('NONE');
+      } else if (e.key === '2') {
+        e.preventDefault();
+        setSelectedTier('HERO');
+      } else if (e.key === '3') {
+        e.preventDefault();
+        setSelectedTier('HUB');
+      } else if (e.key === '4') {
+        e.preventDefault();
+        setSelectedTier('HYGIENE');
+      } else if (lowerKey === 'q') {
+        e.preventDefault();
+        setQuickFilter((prev) => (prev === 'NEEDS_MY_SIGNOFF' ? 'NONE' : 'NEEDS_MY_SIGNOFF'));
+      } else if (lowerKey === 'r') {
+        e.preventDefault();
+        setQuickFilter((prev) => (prev === 'SLA_RISK' ? 'NONE' : 'SLA_RISK'));
+      } else if (e.key === ',') {
+        e.preventDefault();
+        setIsAiConfigOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [
+    assets,
+    guardBlock.isOpen,
+    isAiConfigOpen,
+    isNewAssetOpen,
+    isShortcutsHelpOpen,
+    selectedAssetForDetail,
+    selectedAssetForMultiplier,
+    showAuthModal
+  ]);
 
   // Sync assets to storage
   useEffect(() => {
@@ -132,8 +254,7 @@ export default function App() {
       return;
     }
 
-    // Apply allowed transition updates
-    const updated = {
+    const updated: ContentAsset = {
       ...asset,
       ...result.updatedAsset,
       status: targetStatus,
@@ -142,16 +263,17 @@ export default function App() {
 
     setAssets((prev) => prev.map((a) => (a.id === asset.id ? updated : a)));
 
-    // If detail studio is open on this asset, sync it
     if (selectedAssetForDetail?.id === asset.id) {
       setSelectedAssetForDetail(updated);
     }
   };
 
-  // Save changes from AssetDetailStudio
+  // Save changes from AssetDetailStudio or Archive
   const handleUpdateAsset = (updated: ContentAsset) => {
     setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
-    setSelectedAssetForDetail(updated);
+    if (selectedAssetForDetail?.id === updated.id) {
+      setSelectedAssetForDetail(updated);
+    }
   };
 
   // Delete asset
@@ -172,10 +294,10 @@ export default function App() {
       pillar: item.pillar || 'CONTENT_OPS',
       formatTier: (item.formatTier as FormatTier) || 'HUB',
       status: 'DRAFT_BRIEF',
-      priority: item.priority || 'MEDIUM',
+      priority: item.priority || 'HIGH',
       parentId: item.parentId || null,
       parentTitle: item.parentTitle,
-      platformSpecs: item.platformSpecs,
+      platformSpecs: item.platformSpecs || '1080x1920, 9:16 safe margins, -14 LUFS',
       hookStrategy: item.hookStrategy,
       targetKpi: item.targetKpi,
       rawIntakeNotes: item.rawIntakeNotes,
@@ -186,6 +308,7 @@ export default function App() {
       qaRightsCleared: false,
       qaGatekeeperSigned: false,
       deliverableUrl: null,
+      attachmentCount: 0,
       isWinningFormat: false,
       paidEligible: false,
       createdById: currentUser.id,
@@ -225,13 +348,181 @@ export default function App() {
     }
   };
 
+  // Live Copilot SystemContext Hydration
+  const copilotContext = useCopilotContext(
+    {
+      assets,
+      selectedTier,
+      selectedPillar,
+      quickFilter,
+      filterOnlySla,
+      searchQuery,
+      focusedAsset: selectedAssetForDetail
+    },
+    currentUser
+  );
+
+  // Copilot Tool Action Relay Handlers
+  const handleCopilotMoveStage = (assetId: string, targetStage: AssetStatus) => {
+    const found = assets.find((a) => a.id === assetId);
+    if (!found) return;
+    handleTransitionAsset(found, targetStage);
+  };
+
+  const handleCopilotSignOffQa = (
+    assetId: string,
+    updates: {
+      approveTone?: boolean;
+      approveSpecs?: boolean;
+      approveRights?: boolean;
+      finalSignoff?: boolean;
+    }
+  ) => {
+    const found = assets.find((a) => a.id === assetId);
+    if (!found) return;
+    const isContentManager = currentUser.role === 'CONTENT_MANAGER';
+    const nextSigned = isContentManager ? Boolean(updates.finalSignoff ?? true) : found.qaGatekeeperSigned;
+
+    const updated: ContentAsset = {
+      ...found,
+      qaToneApproved: updates.approveTone ?? true,
+      qaSpecsValidated: updates.approveSpecs ?? true,
+      qaRightsCleared: updates.approveRights ?? true,
+      qaGatekeeperSigned: nextSigned,
+      qaSignedById: nextSigned ? currentUser.id : found.qaSignedById,
+      qaSignedByName: nextSigned ? currentUser.name : found.qaSignedByName,
+      qaSignedAt: nextSigned ? new Date().toISOString() : found.qaSignedAt,
+      status:
+        nextSigned && found.status === 'QA_GATE'
+          ? 'READY_TO_PUBLISH'
+          : found.status,
+      updatedAt: new Date().toISOString()
+    };
+
+    handleUpdateAsset(updated);
+  };
+
+  const handleCopilotTriggerMultiplier = (parentAssetId: string, derivativeCount: number = 3) => {
+    const parent = assets.find((a) => a.id === parentAssetId) || assets.find((a) => a.formatTier === 'HERO') || assets[0];
+    if (!parent) return;
+
+    const baseTemplates: Partial<ContentAsset>[] = [
+      {
+        title: `Short-form Reel: 3 Bottlenecks Killing Creative Velocity`,
+        description: 'High-velocity 45s vertical cutdown of the opening contrarian hook.',
+        pillar: parent.pillar,
+        formatTier: 'HUB',
+        priority: 'HIGH',
+        parentId: parent.id,
+        parentTitle: parent.title,
+        platformSpecs: '1080x1920, 9:16 safe margins, -14 LUFS',
+        hookStrategy: 'Contrarian: "Stop scaling headcount before you fix your approval gates."'
+      },
+      {
+        title: `LinkedIn Carousel Summary: The 5-Stage ContentOps State Machine`,
+        description: '8-slide visual blueprint breaking down RACI governance and 48h SLA clocks.',
+        pillar: parent.pillar,
+        formatTier: 'HUB',
+        priority: 'HIGH',
+        parentId: parent.id,
+        parentTitle: parent.title,
+        platformSpecs: 'LinkedIn Carousel summary (1:1) • 1080x1080 PDF',
+        hookStrategy: 'Curiosity: "How top teams cut review latency from 14 days to 48 hours."'
+      },
+      {
+        title: `Quote Card & X Thread: "The Death of Unchecked Creative Drift"`,
+        description: '7-post analytical thread paired with 3 high-contrast quote cards.',
+        pillar: parent.pillar,
+        formatTier: 'HYGIENE',
+        priority: 'MEDIUM',
+        parentId: parent.id,
+        parentTitle: parent.title,
+        platformSpecs: 'Quote card / X thread • 1:1 & 16:9 Social Pack',
+        hookStrategy: 'Direct Value: "The 4-point QA checklist that blocks unreviewed publishing."'
+      }
+    ];
+
+    handleSpawnChildren(baseTemplates.slice(0, derivativeCount));
+  };
+
+  const handleCopilotFilterBoard = (
+    filterType: 'ALL' | 'HERO' | 'HUB' | 'HYGIENE' | 'SLA_ACTIVE' | 'NEEDS_QA' | 'SLA_RISK'
+  ) => {
+    if (filterType === 'ALL') {
+      setSelectedTier('ALL');
+      setFilterOnlySla(false);
+      setQuickFilter('NONE');
+    } else if (filterType === 'HERO' || filterType === 'HUB' || filterType === 'HYGIENE') {
+      setSelectedTier(filterType);
+      setFilterOnlySla(false);
+      setQuickFilter('NONE');
+    } else if (filterType === 'SLA_ACTIVE') {
+      setFilterOnlySla(true);
+      setSelectedTier('ALL');
+      setQuickFilter('NONE');
+    } else if (filterType === 'NEEDS_QA') {
+      setQuickFilter('NEEDS_MY_SIGNOFF');
+      setFilterOnlySla(false);
+      setSelectedTier('ALL');
+    } else if (filterType === 'SLA_RISK') {
+      setQuickFilter('SLA_RISK');
+      setFilterOnlySla(false);
+      setSelectedTier('ALL');
+    }
+  };
+
+  const handleCopilotDraftBrief = (draft: {
+    title: string;
+    formatTier: FormatTier;
+    hookStrategy?: string;
+    platformSpecs?: string;
+  }) => {
+    const nowIso = new Date().toISOString();
+    const newAsset: ContentAsset = {
+      id: `asset-copilot-${Date.now()}`,
+      title: draft.title,
+      pillar: 'STRATEGY_SERIES',
+      formatTier: draft.formatTier,
+      status: 'DRAFT_BRIEF',
+      priority: 'HIGH',
+      parentId: null,
+      hookStrategy: draft.hookStrategy || 'Contrarian: "90% of platforms fake instant payouts. Here is live telemetry."',
+      platformSpecs: draft.platformSpecs || '1080x1920, 9:16 safe margins, -14 LUFS',
+      targetKpi: '68% 3s Retention Rate, >500 qualified saves',
+      rawIntakeNotes: 'Drafted automatically via Thrill Copilot (IFM.ai K2 Horizon).',
+      slaHours: 48,
+      isSlaBreached: false,
+      qaToneApproved: false,
+      qaSpecsValidated: false,
+      qaRightsCleared: false,
+      qaGatekeeperSigned: false,
+      deliverableUrl: null,
+      attachmentCount: 0,
+      isWinningFormat: false,
+      paidEligible: false,
+      createdById: currentUser.id,
+      assignedToId: currentUser.id,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    };
+    handleCreateAsset(newAsset);
+  };
+
   // Active capacity count (non-published)
   const activePipelineCount = assets.filter((a) => a.status !== 'PUBLISHED').length;
-  const breachedCount = assets.filter((a) => a.status === 'SLA_REVIEW' && a.isSlaBreached).length;
+  const breachedCount = assets.filter((a) => a.status === 'SLA_REVIEW' && calculateSla(a).isBreached).length;
 
   return (
-    <div className="relative min-h-screen bg-[#0f1118] text-white flex flex-col font-sans selection:bg-[#4ff8ac]/30 selection:text-white overflow-hidden">
-      {/* Background Dashboard: Blurred when Auth modal is active */}
+    <div className="relative min-h-screen bg-[#0B0E14] text-white flex flex-col font-sans selection:bg-[#00E599]/30 selection:text-white overflow-hidden">
+      {/* Thrill Outlined -> White Liquid Fill Loading Screen */}
+      {isBootLoading && (
+        <ThrillLoadingScreen
+          mode={loaderMode}
+          onComplete={() => setIsBootLoading(false)}
+        />
+      )}
+
+      {/* Main Workspace */}
       <div 
         className={`min-h-screen flex flex-col transition-all duration-300 ${
           !isAuthenticated && showAuthModal 
@@ -246,13 +537,7 @@ export default function App() {
           onSelectUser={handleSelectUser}
           activeCount={activePipelineCount}
           maxCapacity={25}
-          onOpenNewAsset={() => {
-            if (!isAuthenticated) {
-              setShowAuthModal(true);
-              return;
-            }
-            setIsNewAssetOpen(true);
-          }}
+          onOpenNewAsset={() => setIsNewAssetOpen(true)}
           onOpenAiConfig={() => setIsAiConfigOpen(true)}
           viewMode="kanban"
           onChangeViewMode={() => {}}
@@ -260,33 +545,97 @@ export default function App() {
           onSignOut={handleSignOut}
           isAuthenticated={isAuthenticated}
           onOpenAuthModal={() => setShowAuthModal(true)}
+          onReplayLoader={() => {
+            setLoaderMode('preview');
+            setIsBootLoading(true);
+          }}
         />
 
-        {/* Main Workspace with Sidebar & Kanban Content */}
+        {/* Dismissible Automatic Storage Migration & Repair Notification */}
+        {migrationReport && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="bg-[#121620] border-b border-[#00E599]/30 px-6 py-2.5 text-xs text-white transition-all"
+          >
+            <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-[#00E599]/15 text-[#00E599] shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                </span>
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <span className="font-semibold text-white whitespace-nowrap">
+                    Local Storage Schema Repaired
+                  </span>
+                  <span className="text-[#8F9CAE]" aria-hidden="true">·</span>
+                  <span className="text-[#8F9CAE] truncate">
+                    {migrationReport.summaryMessages[0] ||
+                      'Automatic migration resolved structural discrepancies in stored state.'}
+                  </span>
+                  <span className="text-[#8F9CAE] font-mono tabular-nums whitespace-nowrap">
+                    ({migrationReport.repairedKeys.join(', ')})
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {migrationReport.summaryMessages.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowMigrationDetails((prev) => !prev)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#181E2C] hover:bg-[#1E2536] text-[#8F9CAE] hover:text-white border border-white/10 transition-colors whitespace-nowrap shrink-0"
+                  >
+                    <span>{showMigrationDetails ? 'Hide details' : `View all (${migrationReport.summaryMessages.length})`}</span>
+                    {showMigrationDetails ? (
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setMigrationReport(null)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[#181E2C] hover:bg-[#1E2536] text-[#8F9CAE] hover:text-white border border-white/10 transition-colors whitespace-nowrap shrink-0"
+                  aria-label="Dismiss storage repair notification"
+                >
+                  <span>Dismiss</span>
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {showMigrationDetails && migrationReport.summaryMessages.length > 1 && (
+              <div className="max-w-[1600px] mx-auto mt-2 pt-2 border-t border-white/5 pl-9 space-y-1 text-[#8F9CAE]">
+                {migrationReport.summaryMessages.map((msg, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="text-[#00E599] font-mono tabular-nums">{idx + 1}.</span>
+                    <span>{msg}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Main Workspace with Collapsible Sidebar & Kanban Content */}
         <div className="flex-1 flex min-h-0 overflow-hidden">
           <Sidebar
             currentView={currentView}
             onChangeView={handleChangeView}
+            quickFilter={quickFilter}
+            onChangeQuickFilter={setQuickFilter}
             assets={assets}
-            onOpenNewAsset={() => {
-              if (!isAuthenticated) {
-                setShowAuthModal(true);
-                return;
-              }
-              setIsNewAssetOpen(true);
-            }}
+            currentUser={currentUser}
+            onOpenNewAsset={() => setIsNewAssetOpen(true)}
             onOpenMultiplier={() => {
-              if (!isAuthenticated) {
-                setShowAuthModal(true);
-                return;
-              }
               const heroAsset = assets.find((a) => a.formatTier === 'HERO');
               if (heroAsset) setSelectedAssetForMultiplier(heroAsset);
               else setIsNewAssetOpen(true);
             }}
           />
 
-          <main className="flex-1 flex flex-col min-h-0 overflow-y-auto bg-[#0f1118]">
+          <main className="flex-1 flex flex-col min-h-0 overflow-y-auto bg-[#0B0E14]">
             <KanbanBoard
               assets={assets}
               allUsers={allUsers}
@@ -294,6 +643,7 @@ export default function App() {
               onOpenDetail={(asset) => setSelectedAssetForDetail(asset)}
               onOpenMultiplier={(asset) => setSelectedAssetForMultiplier(asset)}
               onTransitionAsset={handleTransitionAsset}
+              onUpdateAsset={handleUpdateAsset}
               selectedTier={selectedTier}
               onChangeTier={setSelectedTier}
               selectedPillar={selectedPillar}
@@ -302,13 +652,28 @@ export default function App() {
               onSearchChange={setSearchQuery}
               filterOnlySla={filterOnlySla}
               onToggleOnlySla={() => setFilterOnlySla(!filterOnlySla)}
+              quickFilter={quickFilter}
+              onChangeQuickFilter={setQuickFilter}
+              onOpenNewAsset={() => setIsNewAssetOpen(true)}
             />
           </main>
         </div>
       </div>
 
-      {/* Auth Popup Modal with Blurred Dashboard in Background */}
-      {(!isAuthenticated || showAuthModal) && (
+      {/* Floating Thrill Copilot AI Agent (Bottom-Right) */}
+      <FloatingCopilot
+        context={copilotContext}
+        assets={assets}
+        currentUser={currentUser}
+        onMoveAssetStage={handleCopilotMoveStage}
+        onSignOffQa={handleCopilotSignOffQa}
+        onTriggerMultiplier={handleCopilotTriggerMultiplier}
+        onFilterBoard={handleCopilotFilterBoard}
+        onDraftBrief={handleCopilotDraftBrief}
+      />
+
+      {/* Auth Popup Modal */}
+      {showAuthModal && (
         <AuthPage 
           onLoginSuccess={handleLoginSuccess} 
           onClose={() => setShowAuthModal(false)}
@@ -331,7 +696,7 @@ export default function App() {
         />
       )}
 
-      {/* Asset Multiplier Drawer / Modal */}
+      {/* Asset Multiplier Modal */}
       {selectedAssetForMultiplier && (
         <AssetMultiplierModal
           parentAsset={selectedAssetForMultiplier}
@@ -370,6 +735,12 @@ export default function App() {
             setSelectedAssetForDetail(guardBlock.asset);
           }
         }}
+      />
+
+      {/* Hidden Cmd+/ Keyboard Shortcuts Help Overlay */}
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsHelpOpen}
+        onClose={() => setIsShortcutsHelpOpen(false)}
       />
     </div>
   );

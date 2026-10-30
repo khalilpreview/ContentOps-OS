@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan for local storage structural validation, automatic in-place data migration across all app storage keys, and a dismissible repair notification banner in the App component.",
+  "updatedAt":  "2026-10-30T21:41:27.034692588Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

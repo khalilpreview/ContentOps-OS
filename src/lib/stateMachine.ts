@@ -1,8 +1,16 @@
 import { AssetStatus, ContentAsset, TransitionResult, User } from '../types';
 
 /**
+ * Checks whether the active user has permission to toggle the 4th QA checkbox
+ * ("Gatekeeper Final Sign-off") in Stage 4.
+ */
+export function canToggleGatekeeperSignOff(currentUser: User): boolean {
+  return currentUser.role === 'CONTENT_MANAGER';
+}
+
+/**
  * Validates if an asset can transition from its current status to targetStatus
- * according to the deterministic state machine rules and RACI gating in SYSTEM_SPEC_MVP.md.
+ * according to the deterministic state machine rules and RACI gating.
  */
 export function validateStatusTransition(
   asset: ContentAsset,
@@ -110,22 +118,22 @@ export function validateStatusTransition(
     };
   }
 
-  // 4. Transition: QA_GATE -> READY_TO_PUBLISH (VETO BLOCK)
+  // 4. Transition: QA_GATE -> READY_TO_PUBLISH (STRICT 4-POINT VETO BLOCK)
   if (currentStatus === 'QA_GATE' && targetStatus === 'READY_TO_PUBLISH') {
     const missingChecks: string[] = [];
-    if (!asset.qaToneApproved) missingChecks.push('Brand Tone of Voice verified');
-    if (!asset.qaSpecsValidated) missingChecks.push('Platform Specs & Safe Zones checked');
-    if (!asset.qaRightsCleared) missingChecks.push('Commercial & IP Rights cleared');
-    if (!asset.qaGatekeeperSigned) missingChecks.push('Gatekeeper Sign-off stamp');
+    if (!asset.qaToneApproved) missingChecks.push('Tone of Voice & Brand Identity cleared');
+    if (!asset.qaSpecsValidated) missingChecks.push('Hook strength & Platform Safe Zones verified');
+    if (!asset.qaRightsCleared) missingChecks.push('Commercial music & IP Rights licensed');
+    if (!asset.qaGatekeeperSigned) missingChecks.push('Gatekeeper Final Sign-off');
 
     if (missingChecks.length > 0) {
       return {
         allowed: false,
-        reason: `VETO BLOCK: Mandatory QA Gatekeeper criteria not satisfied:\n• ${missingChecks.join('\n• ')}`
+        reason: `VETO BLOCK: Mandatory 4-point QA Gatekeeper checklist not satisfied:\n• ${missingChecks.join('\n• ')}`
       };
     }
 
-    if (currentUser.role !== 'CONTENT_MANAGER') {
+    if (!canToggleGatekeeperSignOff(currentUser)) {
       return {
         allowed: false,
         reason: `VETO BLOCK: Only a CONTENT_MANAGER can advance an asset past the QA Gatekeeper to Ready for Distribution. (Current user role: ${currentUser.role})`
@@ -198,7 +206,7 @@ export const PIPELINE_COLUMNS: Array<{
     id: 'QA_GATE',
     title: 'QA Gatekeeper',
     badge: 'Stage 4',
-    description: 'Strict 3-point checklist & Content Manager sign-off veto'
+    description: 'Strict 4-point binary checklist & Content Manager sign-off veto'
   },
   {
     id: 'READY_TO_PUBLISH',

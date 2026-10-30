@@ -26,6 +26,8 @@ export type AssetStatus =
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
+export type QuickFilterType = 'NONE' | 'NEEDS_MY_SIGNOFF' | 'SLA_RISK';
+
 export interface User {
   id: string;
   name: string;
@@ -62,7 +64,7 @@ export interface ContentAsset {
 
   // Briefing Data
   hookStrategy?: string;        // Hook angles (first 3s / headline)
-  platformSpecs?: string;       // e.g., 9:16 vertical, 1080x1920, max 60s
+  platformSpecs?: string;       // e.g., 1080x1920, 9:16 safe margins, -14 LUFS
   targetKpi?: string;           // e.g., 65% 3s Retention, CTR > 2%
   rawIntakeNotes?: string;       // Campaign raw bullet points
   generatedHooks?: HookVariation[];
@@ -73,22 +75,26 @@ export interface ContentAsset {
   slaExpiresAt?: string | null; // ISO Date string
   isSlaBreached: boolean;
 
-  // QA Gatekeeper Checklist (Mandatory Sign-Off)
-  qaToneApproved: boolean;
-  qaSpecsValidated: boolean;
-  qaRightsCleared: boolean;
-  qaGatekeeperSigned: boolean;
+  // QA Gatekeeper 4-Point Binary Checklist (Mandatory Sign-Off)
+  qaToneApproved: boolean;      // 1. Tone of Voice & Brand Identity cleared
+  qaSpecsValidated: boolean;    // 2. Hook strength & safe zones verified
+  qaRightsCleared: boolean;     // 3. Commercial music & IP rights licensed
+  qaGatekeeperSigned: boolean;  // 4. Gatekeeper Final Sign-off (CONTENT_MANAGER only)
   qaSignedById?: string | null;
   qaSignedByName?: string | null;
   qaSignedAt?: string | null;
 
   // Attachments & Deliverables
   deliverableUrl?: string | null; // Storage path or external link (Figma, Drive, S3, Frame.io)
+  attachmentCount?: number;
   thumbnailUrl?: string | null;
 
-  // Performance Signals (Feedback loop)
-  isWinningFormat: boolean;
+  // Post-Launch Performance Signals (Phase 5 Feedback Loop)
+  retentionRate3s?: number | null; // 3-Second Retention Rate (%)
+  reachImpressions?: string | null; // Reach / Impressions
+  isWinningFormat: boolean;        // True when retentionRate3s > 65%
   paidEligible: boolean;
+  sentToPaidAds?: boolean;
 
   // Ownership & Dates
   createdById: string;
