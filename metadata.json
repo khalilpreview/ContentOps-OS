@@ -1,0 +1,6 @@
+{
+  "name": "ContentOps OS - Enterprise Workflow & SLA Engine",
+  "description": "Enterprise Content Operations platform with deterministic state machine, RACI gatekeeping, dynamic SLA clocks, and IFM.ai K2 Horizon auto-briefing and asset multiplier.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
