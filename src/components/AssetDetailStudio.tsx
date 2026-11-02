@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Sparkles, 
@@ -13,12 +13,16 @@ import {
   FileCheck2,
   Lock,
   CheckCircle2,
-  Send
+  Send,
+  History,
+  FileText
 } from 'lucide-react';
 import { AssetStatus, ContentAsset, FormatTier, PillarType, Priority, User } from '../types';
 import { calculateSla, evaluatePostLaunchRetention } from '../lib/sla';
 import { canToggleGatekeeperSignOff } from '../lib/stateMachine';
 import { generateBrief } from '../lib/aiService';
+import { fetchAssetActivities } from '../lib/apiClient';
+import type { AssetActivity } from '../lib/audit/types';
 
 interface AssetDetailStudioProps {
   asset: ContentAsset;
@@ -73,6 +77,28 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
   const [inlineNotice, setInlineNotice] = useState<string | null>(null);
+
+  // Tabs: 'brief' | 'activities'
+  const [activeTab, setActiveTab] = useState<'brief' | 'activities'>('brief');
+  const [activities, setActivities] = useState<AssetActivity[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoadingActivities(true);
+    fetchAssetActivities(asset.id)
+      .then((items) => {
+        if (isMounted) setActivities(items);
+      })
+      .catch((err) => console.warn('Could not load asset activities:', err))
+      .finally(() => {
+        if (isMounted) setLoadingActivities(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [asset.id]);
 
   const slaInfo = calculateSla(asset);
   const isContentManager = canToggleGatekeeperSignOff(currentUser);
@@ -313,14 +339,116 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
 
         {/* Studio Split-Screen Two-Pane Body */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-y-auto divide-y lg:divide-y-0 lg:divide-x divide-white/[0.07]">
-          {/* ================= LEFT PANE: The Brief Studio & IFM K2 Horizon ================= */}
+          {/* ================= LEFT PANE: The Brief Studio & Audit Trail History ================= */}
           <div className="lg:col-span-7 p-5 lg:p-6 overflow-y-auto space-y-5 bg-[#0B0E14]">
+            {/* Tab Switcher: Brief vs Audit Trail History */}
+            <div className="flex items-center gap-2 border-b border-white/[0.07] pb-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab('brief')}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  activeTab === 'brief'
+                    ? 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40'
+                    : 'text-[#8F9CAE] hover:text-white hover:bg-white/[0.04]'
+                }`}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                <span>Brief &amp; Specs</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('activities')}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  activeTab === 'activities'
+                    ? 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40'
+                    : 'text-[#8F9CAE] hover:text-white hover:bg-white/[0.04]'
+                }`}
+              >
+                <History className="h-3.5 w-3.5" />
+                <span>Audit Trail &amp; History</span>
+                {activities.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/10 text-slate-300 font-mono">
+                    {activities.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
             {inlineNotice && (
               <div className="p-3 rounded-lg bg-[#FF4B55]/15 border border-[#FF4B55]/40 text-[#FF4B55] text-xs">
                 {inlineNotice}
               </div>
             )}
 
+            {activeTab === 'activities' ? (
+              /* Enterprise Immutable Audit Trail Timeline */
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-semibold text-white tracking-wide uppercase">
+                    Chronological Activity Timeline
+                  </h4>
+                  <span className="text-[11px] text-[#8F9CAE]">
+                    Enterprise Audit Enforcement
+                  </span>
+                </div>
+
+                {loadingActivities ? (
+                  <div className="text-xs text-[#8F9CAE] py-8 text-center animate-pulse">
+                    Loading immutable audit trail...
+                  </div>
+                ) : activities.length === 0 ? (
+                  <div className="p-6 rounded-xl bg-[#181E2C] border border-white/[0.07] text-center text-xs text-[#8F9CAE]">
+                    No transition activities logged for this asset yet.
+                  </div>
+                ) : (
+                  <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-white/10">
+                    {activities.map((act) => (
+                      <div key={act.id} className="relative group">
+                        <div className="absolute -left-[1.65rem] top-1 h-3.5 w-3.5 rounded-full bg-[#00E599] border-2 border-[#0B0E14]" />
+                        <div className="bg-[#181E2C] border border-white/[0.07] rounded-xl p-3.5 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-semibold text-white">
+                              {act.performerName || act.performedBy}{' '}
+                              {act.performerRole && (
+                                <span className="font-normal text-[10px] text-[#8F9CAE] font-mono">
+                                  ({act.performerRole})
+                                </span>
+                              )}
+                            </span>
+                            <span className="text-[11px] text-[#8F9CAE] font-mono">
+                              {new Date(act.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+
+                          <div className="text-xs text-[#8F9CAE] flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded bg-white/5 font-mono text-[10px] text-white">
+                              {act.action}
+                            </span>
+                            {act.previousStage && act.newStage && (
+                              <span>
+                                {act.previousStage} &rarr;{' '}
+                                <strong className="text-[#00E599]">{act.newStage}</strong>
+                              </span>
+                            )}
+                          </div>
+
+                          {act.reason && (
+                            <div className="text-xs p-2.5 rounded bg-[#121620] border border-white/5 text-slate-300">
+                              <span className="text-[#F5A524] font-semibold text-[10px] block mb-0.5">
+                                REVISION NOTES / REASON:
+                              </span>
+                              "{act.reason}"
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Asset Title
@@ -507,6 +635,8 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
                 className="w-full bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg px-3 py-2 text-xs text-white placeholder-[#8F9CAE] focus:outline-none"
               />
             </div>
+            </>
+            )}
           </div>
 
           {/* ================= RIGHT PANE: Brand Guardianship QA Gatekeeper & SLA ================= */}

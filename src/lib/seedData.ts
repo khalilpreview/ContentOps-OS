@@ -405,3 +405,4 @@ export const DEMO_SEED_ASSETS: ContentAsset[] = [
  * Teams create their real briefs or can optionally load DEMO_SEED_ASSETS for sandbox testing.
  */
 export const INITIAL_ASSETS: ContentAsset[] = [];
+export const SEED_ASSETS = DEMO_SEED_ASSETS;

@@ -265,3 +265,35 @@ CREATE POLICY "Allow authenticated read logs"
   ON public.logs FOR SELECT
   USING (true);
 
+
+-- =========================================================================
+-- 10. Enterprise Audit Trail: asset_activities
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS public.asset_activities (
+  id TEXT PRIMARY KEY,
+  asset_id TEXT NOT NULL,
+  performed_by TEXT NOT NULL,
+  performer_name TEXT,
+  performer_role TEXT,
+  action TEXT NOT NULL,
+  previous_stage TEXT,
+  new_stage TEXT,
+  reason TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_asset_activities_asset_id ON public.asset_activities (asset_id);
+CREATE INDEX IF NOT EXISTS idx_asset_activities_created_at ON public.asset_activities (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_asset_activities_performed_by ON public.asset_activities (performed_by);
+
+ALTER TABLE public.asset_activities ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow read asset_activities"
+  ON public.asset_activities FOR SELECT
+  USING (true);
+
+CREATE POLICY "Allow authenticated insert asset_activities"
+  ON public.asset_activities FOR INSERT
+  TO authenticated
+  WITH CHECK (true);

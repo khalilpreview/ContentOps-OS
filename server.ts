@@ -158,6 +158,124 @@ async function startServer() {
     }
   });
 
+  // =========================================================================
+  // Prompt 1: User Management, Session Context & Server-Side RBAC
+  // =========================================================================
+  app.post('/api/auth/sync-user', async (req, res) => {
+    try {
+      const { syncUser } = await import('./src/lib/auth/sync-user');
+      const { id, email, name, avatarUrl } = req.body;
+      const user = await syncUser({
+        id,
+        email,
+        user_metadata: {
+          name,
+          avatar_url: avatarUrl,
+        },
+      });
+      res.json({ user });
+    } catch (err: any) {
+      const status = err.statusCode || 500;
+      res.status(status).json({ error: err.name || 'Error', message: err.message });
+    }
+  });
+
+  app.get('/api/auth/me', async (req, res) => {
+    try {
+      const { getCurrentUser } = await import('./src/lib/auth/get-current-user');
+      const user = await getCurrentUser(req);
+      res.json({ user });
+    } catch (err: any) {
+      const status = err.statusCode || 401;
+      res.status(status).json({ error: err.name || 'UnauthorizedError', message: err.message });
+    }
+  });
+
+  // =========================================================================
+  // Prompt 2: Deterministic State Machine Engine
+  // =========================================================================
+  app.post('/api/assets/transition', async (req, res) => {
+    try {
+      const { transitionAssetStage } = await import('./src/lib/actions/transition-stage');
+      const result = await transitionAssetStage(req, req.body);
+      res.json(result);
+    } catch (err: any) {
+      const status = err.statusCode || 500;
+      res.status(status).json({ error: err.name || 'TransitionError', message: err.message });
+    }
+  });
+
+  // =========================================================================
+  // Prompt 3: Server-Side SLA Calculation & Breach Watcher Cron
+  // =========================================================================
+  app.all('/api/cron/sla-check', async (req, res) => {
+    try {
+      const cronSecret = process.env.CRON_SECRET || 'thrill_cron_dev_secret';
+      const authHeader = req.headers.authorization;
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        res.status(401).json({ error: 'Unauthorized: Invalid CRON_SECRET' });
+        return;
+      }
+
+      const { getServerSupabaseClient, getServerSupabaseConfig } = await import('./src/lib/serverSupabase');
+      const { calculateSLA } = await import('./src/lib/sla/calculator');
+      const config = getServerSupabaseConfig();
+      let updatedCount = 0;
+      const evaluatedAssets: any[] = [];
+
+      if (config.isConfigured) {
+        const supabase = getServerSupabaseClient();
+        const { data: assets, error } = await supabase
+          .from('content_assets')
+          .select('id, title, status, sla_expires_at, is_sla_breached')
+          .not('status', 'in', '("READY_TO_PUBLISH","PUBLISHED")');
+
+        if (!error && assets) {
+          for (const asset of assets) {
+            const sla = calculateSLA(asset.sla_expires_at);
+            if (sla.isBreached && !asset.is_sla_breached) {
+              await supabase
+                .from('content_assets')
+                .update({ is_sla_breached: true })
+                .eq('id', asset.id);
+              updatedCount++;
+            }
+            evaluatedAssets.push({
+              id: asset.id,
+              title: asset.title,
+              isBreached: sla.isBreached,
+              urgencyLevel: sla.urgencyLevel,
+              hoursRemaining: sla.hoursRemaining,
+            });
+          }
+        }
+      }
+
+      res.json({
+        message: 'SLA check completed',
+        timestamp: new Date().toISOString(),
+        updatedBreaches: updatedCount,
+        evaluated: evaluatedAssets.length,
+        assets: evaluatedAssets,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // =========================================================================
+  // Prompt 4: Enterprise Audit Trail & Revision History
+  // =========================================================================
+  app.get('/api/assets/:id/activities', async (req, res) => {
+    try {
+      const { getAssetActivities } = await import('./src/lib/audit/logger');
+      const activities = await getAssetActivities(req.params.id);
+      res.json({ activities });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: {

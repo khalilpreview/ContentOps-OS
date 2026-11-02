@@ -1,0 +1,153 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { calculateSLA, computeSLADeadline } from '../src/lib/sla/calculator';
+import { syncUser, getUserById, promoteUserToRole } from '../src/lib/auth/sync-user';
+import { assertRole } from '../src/lib/auth/guard';
+import { transitionAssetStage, getAsset } from '../src/lib/actions/transition-stage';
+import { logAssetActivity, getAssetActivities, clearInMemoryActivities } from '../src/lib/audit/logger';
+import { ForbiddenError, BadRequestError } from '../src/lib/auth/types';
+
+describe('Prompt 1: User Management, Session Context & Server-Side RBAC', () => {
+  it('synchronizes a regular specialist user with default role CREATIVE_SPECIALIST', async () => {
+    const user = await syncUser({
+      id: 'test-spec-1',
+      email: 'jane.specialist@test.com',
+      user_metadata: { name: 'Jane Specialist' },
+    });
+    assert.equal(user.id, 'test-spec-1');
+    assert.equal(user.role, 'CREATIVE_SPECIALIST');
+    assert.equal(user.email, 'jane.specialist@test.com');
+  });
+
+  it('promotes designated email to CONTENT_MANAGER upon registration', async () => {
+    const admin = await syncUser({
+      id: 'test-admin-1',
+      email: 'elena@thrill.com',
+    });
+    assert.equal(admin.role, 'CONTENT_MANAGER');
+  });
+
+  it('assertRole permits authorized roles and throws ForbiddenError for unauthorized roles', async () => {
+    const fakeReq: any = {
+      headers: {
+        'x-dev-user-id': 'u-cs', // Marcus Chen (CREATIVE_SPECIALIST)
+      },
+    };
+
+    // Creative Specialist cannot execute CONTENT_MANAGER action
+    await assert.rejects(
+      async () => {
+        await assertRole(fakeReq, ['CONTENT_MANAGER']);
+      },
+      (err: any) => err instanceof ForbiddenError
+    );
+
+    // Creative Specialist CAN execute CREATIVE_SPECIALIST action
+    const user = await assertRole(fakeReq, ['CREATIVE_SPECIALIST', 'CONTENT_MANAGER']);
+    assert.equal(user.role, 'CREATIVE_SPECIALIST');
+  });
+});
+
+describe('Prompt 2: Deterministic State Machine Engine', () => {
+  it('blocks transition to READY_TO_PUBLISH if performed by non-CONTENT_MANAGER', async () => {
+    const fakeReq: any = {
+      headers: {
+        'x-dev-user-id': 'u-cs', // Marcus Chen (CREATIVE_SPECIALIST)
+      },
+    };
+
+    await assert.rejects(
+      async () => {
+        await transitionAssetStage(fakeReq, {
+          assetId: 'asset-qa-401',
+          targetStage: 'READY_TO_PUBLISH',
+        });
+      },
+      (err: any) => err instanceof ForbiddenError
+    );
+  });
+
+  it('blocks submission to QA_GATE if deliverableUrl is missing', async () => {
+    const fakeReq: any = {
+      headers: {
+        'x-dev-user-id': 'u-cs',
+      },
+    };
+
+    await assert.rejects(
+      async () => {
+        await transitionAssetStage(fakeReq, {
+          assetId: 'asset-draft-501',
+          targetStage: 'QA_GATE',
+          metadata: { deliverableUrl: '' },
+        });
+      },
+      (err: any) => err instanceof BadRequestError
+    );
+  });
+
+  it('blocks revision rejections without explanatory revisionNotes', async () => {
+    const fakeReq: any = {
+      headers: {
+        'x-dev-user-id': 'u-cm', // Elena Vance
+      },
+    };
+
+    await assert.rejects(
+      async () => {
+        await transitionAssetStage(fakeReq, {
+          assetId: 'asset-qa-401',
+          targetStage: 'IN_PRODUCTION',
+          metadata: { revisionNotes: '' },
+        });
+      },
+      (err: any) => err instanceof BadRequestError
+    );
+  });
+});
+
+describe('Prompt 3: SLA Calculation & Urgency Level Logic', () => {
+  it('returns NORMAL when more than 4 hours remain', () => {
+    const future = new Date(Date.now() + 10 * 3600 * 1000).toISOString();
+    const result = calculateSLA(future);
+    assert.equal(result.isBreached, false);
+    assert.equal(result.urgencyLevel, 'NORMAL');
+    assert.ok(result.hoursRemaining > 4);
+  });
+
+  it('returns WARNING when 4 hours or fewer remain', () => {
+    const warningTime = new Date(Date.now() + 2 * 3600 * 1000).toISOString();
+    const result = calculateSLA(warningTime);
+    assert.equal(result.isBreached, false);
+    assert.equal(result.urgencyLevel, 'WARNING');
+  });
+
+  it('returns BREACHED when deadline is in the past', () => {
+    const past = new Date(Date.now() - 3600 * 1000).toISOString();
+    const result = calculateSLA(past);
+    assert.equal(result.isBreached, true);
+    assert.equal(result.urgencyLevel, 'BREACHED');
+  });
+});
+
+describe('Prompt 4: Enterprise Audit Trail & Revision History', () => {
+  it('logs immutable activity and fetches chronological history', async () => {
+    clearInMemoryActivities();
+    await logAssetActivity({
+      assetId: 'asset-test-audit',
+      performedBy: 'u-cm',
+      performerName: 'Elena Vance',
+      performerRole: 'CONTENT_MANAGER',
+      action: 'STAGE_TRANSITION',
+      previousStage: 'DRAFT_BRIEF',
+      newStage: 'SLA_REVIEW',
+      reason: 'Brief validated and ready for SLA review',
+    });
+
+    const activities = await getAssetActivities('asset-test-audit');
+    assert.equal(activities.length, 1);
+    assert.equal(activities[0].performedBy, 'u-cm');
+    assert.equal(activities[0].newStage, 'SLA_REVIEW');
+    assert.equal(activities[0].action, 'STAGE_TRANSITION');
+  });
+});
