@@ -29,6 +29,7 @@ interface AssetDetailStudioProps {
   onOpenMultiplier: (asset: ContentAsset) => void;
   onAttemptTransition: (asset: ContentAsset, targetStatus: AssetStatus) => void;
   onDeleteAsset?: (assetId: string) => void;
+  onOpenQaInspector?: (asset: ContentAsset) => void;
 }
 
 export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
@@ -38,7 +39,8 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
   allUsers,
   currentUser,
   onOpenMultiplier,
-  onAttemptTransition
+  onAttemptTransition,
+  onOpenQaInspector
 }) => {
   // Form draft state
   const [title, setTitle] = useState(asset.title);
@@ -266,6 +268,18 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {asset.status === 'QA_GATE' && onOpenQaInspector && (
+              <button
+                type="button"
+                onClick={() => onOpenQaInspector(asset)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#00E599]/20 hover:bg-[#00E599]/30 text-[#00E599] border border-[#00E599]/50 transition-colors shadow-sm cursor-pointer"
+                title="Open In-App Media Inspector & QA Studio"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Media Inspector & QA Studio</span>
+              </button>
+            )}
+
             {formatTier === 'HERO' && (
               <button
                 type="button"

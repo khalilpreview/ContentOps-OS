@@ -24,3 +24,12 @@ test('Google authentication assigns Google SSO provider and valid session', asyn
   assert.equal(session.user.name, 'Alex Rivera');
   assert.ok(session.token);
 });
+
+test('Production clean slate: INITIAL_ASSETS is an empty array', async () => {
+  const { INITIAL_ASSETS, DEMO_SEED_ASSETS, DEFAULT_PRODUCTION_USER } = await import('./seedData');
+  assert.equal(INITIAL_ASSETS.length, 0, 'INITIAL_ASSETS must be clean 0 assets for production');
+  assert.ok(DEMO_SEED_ASSETS.length > 0, 'DEMO_SEED_ASSETS has template assets for optional sandbox loading');
+  assert.equal(DEFAULT_PRODUCTION_USER.role, 'CONTENT_MANAGER');
+  assert.ok(DEFAULT_PRODUCTION_USER.email);
+});
+

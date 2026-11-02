@@ -10,10 +10,12 @@ import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 import { ThrillLoadingScreen } from './components/ThrillLoadingScreen';
 import { AuthPage } from './components/AuthPage';
 import { Sidebar } from './components/Sidebar';
+import { QAInspectorModal } from './components/qa/QAInspectorModal';
+import { Dashboard } from './components/Dashboard';
 import { FloatingCopilot } from './components/copilot/FloatingCopilot';
 import { useCopilotContext } from './hooks/useCopilotContext';
-import { AssetStatus, ContentAsset, FormatTier, PillarType, QuickFilterType, User } from './types';
-import { INITIAL_ASSETS, SEED_USERS } from './lib/seedData';
+import { AssetStatus, ContentAsset, FormatTier, PillarType, QuickFilterType, User, UserRole } from './types';
+import { DEMO_SEED_ASSETS, INITIAL_ASSETS, SEED_USERS } from './lib/seedData';
 import { validateStatusTransition } from './lib/stateMachine';
 import { calculateSla } from './lib/sla';
 import { clearSession } from './lib/auth';
@@ -24,6 +26,18 @@ import {
   validateAndMigrateStorage
 } from './lib/storageMigration';
 import { ShieldCheck, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { setUserContext, logInfo, logWarn, logError } from './lib/logger';
+import {
+  getSupabaseConfig,
+  getSupabaseClient,
+  fetchAssetsFromSupabase,
+  upsertAssetToSupabase,
+  deleteAssetFromSupabase,
+  seedAssetsToSupabaseIfEmpty,
+  mapSupabaseUserToUser,
+  fetchUserProfileFromSupabase,
+  supabaseSignOut
+} from './lib/supabase';
 
 export default function App() {
   // Run local storage structural validation & automatic in-place migration once on initialization
@@ -33,16 +47,112 @@ export default function App() {
   );
   const [showMigrationDetails, setShowMigrationDetails] = useState<boolean>(false);
 
-  // Default to authenticated session with Elena Vance so the board is immediately interactive
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
-  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  // Supabase Configuration & Modal Tab state
+  const [supabaseConfig, setSupabaseConfig] = useState(() => getSupabaseConfig());
+  const [authModalTab, setAuthModalTab] = useState<'picker' | 'supabase' | 'config'>('supabase');
+  const [settingsTab, setSettingsTab] = useState<'profile' | 'engine'>('profile');
+  const [, setIsSupabaseSyncing] = useState<boolean>(false);
 
-  const [allUsers] = useState<User[]>(SEED_USERS);
+  // Session guard: authenticate if a valid session exists in storage, otherwise show auth modal
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return Boolean(initialStorage.authSession?.user);
+  });
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(() => {
+    return !initialStorage.authSession?.user;
+  });
+
+  const [allUsers, setAllUsers] = useState<User[]>(SEED_USERS);
   const [currentUser, setCurrentUser] = useState<User>(initialStorage.currentUser);
   const [assets, setAssets] = useState<ContentAsset[]>(initialStorage.assets);
 
+  // Synchronize telemetry user context with active authenticated user
+  useEffect(() => {
+    setUserContext(currentUser?.id, currentUser?.role);
+  }, [currentUser]);
+
+  // Supabase Real-time Session & Asset Hydration
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setSupabaseConfig(getSupabaseConfig());
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    const config = getSupabaseConfig();
+    if (config.isConfigured) {
+      try {
+        const supabase = getSupabaseClient();
+
+        // 1. Restore active Supabase session & sync profile from 'profiles' table
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
+          if (session?.user) {
+            let mapped = mapSupabaseUserToUser(session.user);
+            // Fetch any custom profile row from 'profiles' table
+            const remoteProfile = await fetchUserProfileFromSupabase(session.user.id);
+            if (remoteProfile) {
+              mapped = {
+                ...mapped,
+                ...remoteProfile,
+                role: (remoteProfile.role as UserRole) || mapped.role
+              };
+            }
+            setCurrentUser(mapped);
+            setIsAuthenticated(true);
+            setShowAuthModal(false);
+          }
+        }).catch((err) => {
+          console.warn('Supabase getSession error:', err);
+        });
+
+        // 2. Subscribe to auth changes (sign-in, token refresh, sign-out)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+          if (session?.user) {
+            let mapped = mapSupabaseUserToUser(session.user);
+            const remoteProfile = await fetchUserProfileFromSupabase(session.user.id);
+            if (remoteProfile) {
+              mapped = {
+                ...mapped,
+                ...remoteProfile,
+                role: (remoteProfile.role as UserRole) || mapped.role
+              };
+            }
+            setCurrentUser(mapped);
+            setIsAuthenticated(true);
+            setShowAuthModal(false);
+          }
+        });
+
+        // 3. Hydrate assets from Supabase PostgreSQL database
+        setIsSupabaseSyncing(true);
+        fetchAssetsFromSupabase().then(async (remoteAssets) => {
+          setIsSupabaseSyncing(false);
+          if (remoteAssets && remoteAssets.length > 0) {
+            setAssets(remoteAssets);
+          } else if (remoteAssets && remoteAssets.length === 0) {
+            // Clean production database - keep pipeline empty
+            setAssets([]);
+          }
+        }).catch((err) => {
+          setIsSupabaseSyncing(false);
+          console.warn('Supabase asset hydration error:', err);
+        });
+
+        return () => {
+          subscription.unsubscribe();
+          window.removeEventListener('storage', handleStorageChange);
+        };
+      } catch (err) {
+        console.warn('Supabase initialization warning:', err);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [supabaseConfig.isConfigured]);
+
   // Modals & Drawers
   const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<ContentAsset | null>(null);
+  const [selectedAssetForQa, setSelectedAssetForQa] = useState<ContentAsset | null>(null);
   const [selectedAssetForMultiplier, setSelectedAssetForMultiplier] = useState<ContentAsset | null>(null);
   const [isNewAssetOpen, setIsNewAssetOpen] = useState(false);
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(false);
@@ -63,14 +173,14 @@ export default function App() {
   });
 
   // Filters & Views
-  const [currentView, setCurrentView] = useState<'pipeline' | 'sla' | 'multiplier' | 'archive'>('pipeline');
+  const [currentView, setCurrentView] = useState<'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard'>('pipeline');
   const [selectedTier, setSelectedTier] = useState<FormatTier | 'ALL'>('ALL');
   const [selectedPillar, setSelectedPillar] = useState<PillarType | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterOnlySla, setFilterOnlySla] = useState(false);
   const [quickFilter, setQuickFilter] = useState<QuickFilterType>('NONE');
 
-  const handleChangeView = (view: 'pipeline' | 'sla' | 'multiplier' | 'archive') => {
+  const handleChangeView = (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard') => {
     setCurrentView(view);
     if (view === 'sla') {
       setFilterOnlySla(true);
@@ -82,6 +192,8 @@ export default function App() {
       } else {
         setIsNewAssetOpen(true);
       }
+    } else if (view === 'dashboard') {
+      setFilterOnlySla(false);
     } else if (view === 'archive') {
       setFilterOnlySla(false);
     } else {
@@ -119,6 +231,10 @@ export default function App() {
         }
         if (selectedAssetForMultiplier) {
           setSelectedAssetForMultiplier(null);
+          return;
+        }
+        if (selectedAssetForQa) {
+          setSelectedAssetForQa(null);
           return;
         }
         if (selectedAssetForDetail) {
@@ -159,6 +275,7 @@ export default function App() {
         isShortcutsHelpOpen ||
         isNewAssetOpen ||
         isAiConfigOpen ||
+        Boolean(selectedAssetForQa) ||
         Boolean(selectedAssetForDetail) ||
         Boolean(selectedAssetForMultiplier) ||
         guardBlock.isOpen ||
@@ -201,8 +318,12 @@ export default function App() {
       } else if (lowerKey === 'r') {
         e.preventDefault();
         setQuickFilter((prev) => (prev === 'SLA_RISK' ? 'NONE' : 'SLA_RISK'));
+      } else if (lowerKey === 'd') {
+        e.preventDefault();
+        setCurrentView((prev) => (prev === 'dashboard' ? 'pipeline' : 'dashboard'));
       } else if (e.key === ',') {
         e.preventDefault();
+        setSettingsTab('profile');
         setIsAiConfigOpen(true);
       }
     };
@@ -216,6 +337,7 @@ export default function App() {
     isNewAssetOpen,
     isShortcutsHelpOpen,
     selectedAssetForDetail,
+    selectedAssetForQa,
     selectedAssetForMultiplier,
     showAuthModal
   ]);
@@ -239,11 +361,41 @@ export default function App() {
     }
   };
 
+  // User Profile Update handler (synced from SettingsModal directly to local session & Supabase profiles)
+  const handleUpdateUser = (updated: User) => {
+    setCurrentUser(updated);
+    setAllUsers((prev) => {
+      const exists = prev.some((u) => u.id === updated.id);
+      return exists ? prev.map((u) => (u.id === updated.id ? updated : u)) : [updated, ...prev];
+    });
+
+    try {
+      localStorage.setItem(USER_STORAGE_KEY, updated.id);
+      const rawSession = localStorage.getItem('contentops_auth_session');
+      if (rawSession) {
+        const parsed = JSON.parse(rawSession);
+        if (parsed?.user?.id === updated.id) {
+          parsed.user = updated;
+          localStorage.setItem('contentops_auth_session', JSON.stringify(parsed));
+        }
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   // State Machine Transition Handler
   const handleTransitionAsset = (asset: ContentAsset, targetStatus: AssetStatus) => {
     const result = validateStatusTransition(asset, targetStatus, currentUser);
 
     if (!result.allowed) {
+      logWarn('state_machine_guard_rejected', result.reason || 'Transition guard rejected state change.', {
+        assetId: asset.id,
+        assetTitle: asset.title,
+        sourceStatus: asset.status,
+        targetStatus,
+        actorRole: currentUser.role
+      });
       setGuardBlock({
         isOpen: true,
         reason: result.reason || 'Transition guard rejected state change.',
@@ -263,24 +415,54 @@ export default function App() {
 
     setAssets((prev) => prev.map((a) => (a.id === asset.id ? updated : a)));
 
+    if (supabaseConfig.isConfigured) {
+      upsertAssetToSupabase(updated).catch((err) => {
+        logError('supabase_asset_upsert_failed', err, { assetId: updated.id, status: targetStatus });
+        console.warn('Failed to upsert transitioned asset to Supabase:', err);
+      });
+    }
+
     if (selectedAssetForDetail?.id === asset.id) {
       setSelectedAssetForDetail(updated);
+    }
+    if (selectedAssetForQa?.id === asset.id) {
+      setSelectedAssetForQa(updated);
     }
   };
 
   // Save changes from AssetDetailStudio or Archive
   const handleUpdateAsset = (updated: ContentAsset) => {
     setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+
+    if (supabaseConfig.isConfigured) {
+      upsertAssetToSupabase(updated).catch((err) => {
+        console.warn('Failed to upsert updated asset to Supabase:', err);
+      });
+    }
+
     if (selectedAssetForDetail?.id === updated.id) {
       setSelectedAssetForDetail(updated);
+    }
+    if (selectedAssetForQa?.id === updated.id) {
+      setSelectedAssetForQa(updated);
     }
   };
 
   // Delete asset
   const handleDeleteAsset = (assetId: string) => {
     setAssets((prev) => prev.filter((a) => a.id !== assetId));
+
+    if (supabaseConfig.isConfigured) {
+      deleteAssetFromSupabase(assetId).catch((err) => {
+        console.warn('Failed to delete asset from Supabase:', err);
+      });
+    }
+
     if (selectedAssetForDetail?.id === assetId) {
       setSelectedAssetForDetail(null);
+    }
+    if (selectedAssetForQa?.id === assetId) {
+      setSelectedAssetForQa(null);
     }
   };
 
@@ -318,11 +500,25 @@ export default function App() {
     }));
 
     setAssets((prev) => [...created, ...prev]);
+
+    if (supabaseConfig.isConfigured) {
+      created.forEach((c) => {
+        upsertAssetToSupabase(c).catch((err) => {
+          console.warn('Failed to upsert spawned child to Supabase:', err);
+        });
+      });
+    }
   };
 
   // Create new asset brief
   const handleCreateAsset = (newAsset: ContentAsset) => {
     setAssets((prev) => [newAsset, ...prev]);
+
+    if (supabaseConfig.isConfigured) {
+      upsertAssetToSupabase(newAsset).catch((err) => {
+        console.warn('Failed to upsert new asset to Supabase:', err);
+      });
+    }
   };
 
   // Authentication Handlers
@@ -333,19 +529,41 @@ export default function App() {
   };
 
   const handleSignOut = () => {
+    supabaseSignOut().catch(() => {});
     clearSession();
     setIsAuthenticated(false);
+    setAuthModalTab('supabase');
     setShowAuthModal(true);
   };
 
-  // Reset to initial demo data
-  const handleResetData = () => {
-    setAssets(INITIAL_ASSETS);
+  // Populate demo template assets on demand (for testing/preview)
+  const handleLoadDemoData = () => {
+    setAssets(DEMO_SEED_ASSETS);
     try {
-      localStorage.removeItem(ASSETS_STORAGE_KEY);
+      localStorage.setItem(ASSETS_STORAGE_KEY, JSON.stringify(DEMO_SEED_ASSETS));
     } catch {
       // ignore
     }
+    if (supabaseConfig.isConfigured) {
+      seedAssetsToSupabaseIfEmpty(DEMO_SEED_ASSETS).catch((err) => {
+        console.warn('Failed to seed demo assets to Supabase:', err);
+      });
+    }
+  };
+
+  // Clear pipeline to clean zero-state
+  const handleClearAllData = () => {
+    setAssets([]);
+    try {
+      localStorage.setItem(ASSETS_STORAGE_KEY, JSON.stringify([]));
+    } catch {
+      // ignore
+    }
+  };
+
+  // Reset to clean production baseline
+  const handleResetData = () => {
+    handleClearAllData();
   };
 
   // Live Copilot SystemContext Hydration
@@ -538,16 +756,27 @@ export default function App() {
           activeCount={activePipelineCount}
           maxCapacity={25}
           onOpenNewAsset={() => setIsNewAssetOpen(true)}
-          onOpenAiConfig={() => setIsAiConfigOpen(true)}
+          onOpenAiConfig={() => {
+            setSettingsTab('profile');
+            setIsAiConfigOpen(true);
+          }}
           viewMode="kanban"
           onChangeViewMode={() => {}}
           breachedCount={breachedCount}
           onSignOut={handleSignOut}
           isAuthenticated={isAuthenticated}
-          onOpenAuthModal={() => setShowAuthModal(true)}
+          onOpenAuthModal={() => {
+            setAuthModalTab('supabase');
+            setShowAuthModal(true);
+          }}
           onReplayLoader={() => {
             setLoaderMode('preview');
             setIsBootLoading(true);
+          }}
+          supabaseConfigured={supabaseConfig.isConfigured}
+          onOpenSupabaseConfig={() => {
+            setAuthModalTab('config');
+            setShowAuthModal(true);
           }}
         />
 
@@ -636,26 +865,43 @@ export default function App() {
           />
 
           <main className="flex-1 flex flex-col min-h-0 overflow-y-auto bg-[#0B0E14]">
-            <KanbanBoard
-              assets={assets}
-              allUsers={allUsers}
-              currentUser={currentUser}
-              onOpenDetail={(asset) => setSelectedAssetForDetail(asset)}
-              onOpenMultiplier={(asset) => setSelectedAssetForMultiplier(asset)}
-              onTransitionAsset={handleTransitionAsset}
-              onUpdateAsset={handleUpdateAsset}
-              selectedTier={selectedTier}
-              onChangeTier={setSelectedTier}
-              selectedPillar={selectedPillar}
-              onChangePillar={setSelectedPillar}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              filterOnlySla={filterOnlySla}
-              onToggleOnlySla={() => setFilterOnlySla(!filterOnlySla)}
-              quickFilter={quickFilter}
-              onChangeQuickFilter={setQuickFilter}
-              onOpenNewAsset={() => setIsNewAssetOpen(true)}
-            />
+            {currentView === 'dashboard' ? (
+              <Dashboard
+                assets={assets}
+                currentUser={currentUser}
+                onNavigateToKanban={() => handleChangeView('pipeline')}
+                onOpenNewAsset={() => setIsNewAssetOpen(true)}
+              />
+            ) : (
+              <KanbanBoard
+                assets={assets}
+                allUsers={allUsers}
+                currentUser={currentUser}
+                onOpenDetail={(asset) => {
+                  if (asset.status === 'QA_GATE') {
+                    setSelectedAssetForQa(asset);
+                  } else {
+                    setSelectedAssetForDetail(asset);
+                  }
+                }}
+                onOpenMultiplier={(asset) => setSelectedAssetForMultiplier(asset)}
+                onTransitionAsset={handleTransitionAsset}
+                onUpdateAsset={handleUpdateAsset}
+                selectedTier={selectedTier}
+                onChangeTier={setSelectedTier}
+                selectedPillar={selectedPillar}
+                onChangePillar={setSelectedPillar}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                filterOnlySla={filterOnlySla}
+                onToggleOnlySla={() => setFilterOnlySla(!filterOnlySla)}
+                quickFilter={quickFilter}
+                onChangeQuickFilter={setQuickFilter}
+                onOpenNewAsset={() => setIsNewAssetOpen(true)}
+                onOpenDashboard={() => handleChangeView('dashboard')}
+                onLoadDemoData={handleLoadDemoData}
+              />
+            )}
           </main>
         </div>
       </div>
@@ -675,8 +921,28 @@ export default function App() {
       {/* Auth Popup Modal */}
       {showAuthModal && (
         <AuthPage 
-          onLoginSuccess={handleLoginSuccess} 
+          onLoginSuccess={(user) => {
+            handleLoginSuccess(user);
+            setSupabaseConfig(getSupabaseConfig());
+          }} 
           onClose={() => setShowAuthModal(false)}
+          initialTab={authModalTab}
+        />
+      )}
+
+      {/* In-App Media Inspector & QA Studio Modal (STAGE 4: QA Gatekeeper) */}
+      {selectedAssetForQa && (
+        <QAInspectorModal
+          asset={selectedAssetForQa}
+          currentUser={currentUser}
+          allUsers={allUsers}
+          onClose={() => setSelectedAssetForQa(null)}
+          onUpdateAsset={handleUpdateAsset}
+          onTransitionAsset={handleTransitionAsset}
+          onOpenGeneralStudio={(asset) => {
+            setSelectedAssetForQa(null);
+            setSelectedAssetForDetail(asset);
+          }}
         />
       )}
 
@@ -693,6 +959,10 @@ export default function App() {
           }}
           onAttemptTransition={handleTransitionAsset}
           onDeleteAsset={handleDeleteAsset}
+          onOpenQaInspector={(asset) => {
+            setSelectedAssetForDetail(null);
+            setSelectedAssetForQa(asset);
+          }}
         />
       )}
 
@@ -715,11 +985,14 @@ export default function App() {
         currentUser={currentUser}
       />
 
-      {/* AI & Engine Config Modal */}
+      {/* Application Settings & Profile Modal */}
       <AiConfigModal
         isOpen={isAiConfigOpen}
         onClose={() => setIsAiConfigOpen(false)}
         onResetData={handleResetData}
+        currentUser={currentUser}
+        onUpdateUser={handleUpdateUser}
+        initialTab={settingsTab}
       />
 
       {/* Guard Block Veto Alert Modal */}

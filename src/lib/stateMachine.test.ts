@@ -4,7 +4,7 @@ import { validateStatusTransition, canToggleGatekeeperSignOff } from './stateMac
 import { calculateSla, isSlaRiskAsset, isNeedsMySignOffAsset, evaluatePostLaunchRetention } from './sla';
 import { buildCopilotContext } from '../hooks/useCopilotContext';
 import { evaluateCopilotCommand } from './ai/tools';
-import { INITIAL_ASSETS } from './seedData';
+import { DEMO_SEED_ASSETS, INITIAL_ASSETS } from './seedData';
 import { ContentAsset, User } from '../types';
 
 const contentManager: User = {
@@ -189,12 +189,21 @@ test('Quick filters and Phase 5 post-launch retention evaluation', () => {
   assert.equal(normalEval.badgeLabel, null);
 });
 
-test('Thrill Copilot context hydration & tool-calling command evaluation', () => {
-  const ctx = buildCopilotContext({ assets: INITIAL_ASSETS }, contentManager);
+test('Production clean slate: Copilot context handles 0 assets gracefully', () => {
+  const emptyCtx = buildCopilotContext({ assets: INITIAL_ASSETS }, contentManager);
+  assert.equal(emptyCtx.pipelineSummary.activePipelineCount, 0);
+  assert.equal(emptyCtx.pipelineSummary.pendingQASignoffs, 0);
+  assert.equal(emptyCtx.pipelineSummary.slaRisks, 0);
+});
+
+test('Thrill Copilot context hydration & tool-calling command evaluation with demo pipeline', () => {
+  const ctx = buildCopilotContext({ assets: DEMO_SEED_ASSETS }, contentManager);
   assert.equal(ctx.currentUser.role, 'CONTENT_MANAGER');
-  assert.equal(ctx.pipelineSummary.activePipelineCount, 8);
+  const activeCount = DEMO_SEED_ASSETS.filter((a) => a.status !== 'PUBLISHED').length;
+  const qaCount = DEMO_SEED_ASSETS.filter((a) => a.status === 'QA_GATE').length;
+  assert.equal(ctx.pipelineSummary.activePipelineCount, activeCount);
   assert.equal(ctx.pipelineSummary.capacityLimit, 25);
-  assert.equal(ctx.pipelineSummary.pendingQASignoffs, 1);
+  assert.equal(ctx.pipelineSummary.pendingQASignoffs, qaCount);
   assert.ok(ctx.pipelineSummary.slaRisks >= 2);
 
   // Test 1: "What requires my attention right now?"

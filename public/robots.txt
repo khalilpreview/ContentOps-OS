@@ -1,0 +1,27 @@
+# Robots.txt for Thrill ContentOps OS
+# Production crawler access management
+
+User-agent: *
+# Allow public application views and static assets
+Allow: /$
+Allow: /pipeline
+Allow: /dashboard
+Allow: /archive
+Allow: /assets/
+Allow: /favicon.ico
+
+# Disallow backend APIs, serverless functions, and internal endpoints
+Disallow: /api/
+Disallow: /.netlify/
+Disallow: /admin/
+Disallow: /settings
+Disallow: /auth/
+Disallow: /private/
+
+# Prevent crawl loops on internal search queries
+Disallow: /*?*q=
+Disallow: /*?*search=
+Disallow: /*?*query=
+
+# Sitemap index
+Sitemap: /sitemap.xml

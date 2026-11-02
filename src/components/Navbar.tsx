@@ -5,9 +5,11 @@ import {
   ChevronDown, 
   Clock, 
   LogOut,
+  LogIn,
   ShieldCheck,
   Check,
-  UserCheck
+  UserCheck,
+  UserCog
 } from 'lucide-react';
 import { User, UserRole } from '../types';
 import { BrandLogo } from './BrandLogo';
@@ -27,6 +29,8 @@ interface NavbarProps {
   isAuthenticated?: boolean;
   onOpenAuthModal?: () => void;
   onReplayLoader?: () => void;
+  supabaseConfigured?: boolean;
+  onOpenSupabaseConfig?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -41,7 +45,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSignOut,
   isAuthenticated = true,
   onOpenAuthModal,
-  onReplayLoader
+  onReplayLoader,
+  supabaseConfigured = false,
+  onOpenSupabaseConfig
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -107,6 +113,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="h-1.5 w-1.5 rounded-full bg-[#00E599]" />
             <span>IFM K2 Horizon</span>
           </div>
+
+          {onOpenSupabaseConfig && (
+            <button
+              type="button"
+              onClick={onOpenSupabaseConfig}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#181E2C] hover:bg-[#202738] border border-white/[0.07] hover:border-[#00E599]/30 text-[11px] font-mono transition-colors cursor-pointer"
+              title="Configure Supabase Database & Auth"
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${supabaseConfigured ? 'bg-[#00E599] shadow-sm shadow-[#00E599]/50' : 'bg-[#F5A524]'}`} />
+              <span className={supabaseConfigured ? 'text-[#00E599]' : 'text-[#F5A524]'}>
+                {supabaseConfigured ? 'Supabase DB & Auth' : 'Supabase Config'}
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Center: Capacity bar & SLA breach alert */}
@@ -213,7 +233,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                               <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dotColor}`} />
                             </div>
                             <div className="text-[11px] text-[#8F9CAE] truncate">
-                              {meta.label} • <span className={meta.textColor}>{meta.badge}</span>
+                              {meta.label} • <span className={meta.textColor}>{u.team || meta.badge}</span>
                             </div>
                           </div>
                         </div>
@@ -221,6 +241,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                       </button>
                     );
                   })}
+                </div>
+
+                <div className="p-2 border-t border-white/[0.07] bg-[#121620]/80">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      onOpenAiConfig();
+                    }}
+                    className="w-full py-1.5 px-2.5 rounded-lg text-xs font-semibold text-[#00E599] hover:bg-[#00E599]/10 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <UserCog className="h-3.5 w-3.5" />
+                    <span>Edit Profile &amp; Team Settings</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -237,7 +271,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Sign Out Button */}
-          {isAuthenticated && onSignOut && (
+          {isAuthenticated && onSignOut ? (
             <button
               onClick={onSignOut}
               className="h-9 w-9 rounded-lg bg-[#181E2C] hover:bg-[#FF4B55]/15 border border-white/[0.07] hover:border-[#FF4B55]/40 text-[#8F9CAE] hover:text-[#FF4B55] flex items-center justify-center transition-colors cursor-pointer"
@@ -246,6 +280,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <LogOut className="h-3.5 w-3.5" />
             </button>
+          ) : (
+            onOpenAuthModal && (
+              <button
+                onClick={onOpenAuthModal}
+                className="px-3 py-1.5 rounded-lg bg-[#00E599] hover:bg-[#00c985] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-[#00E599]/20 cursor-pointer"
+                title="Sign in with Supabase"
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                <span>Sign In</span>
+              </button>
+            )
           )}
         </div>
       </div>

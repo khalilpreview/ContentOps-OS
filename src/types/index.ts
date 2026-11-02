@@ -35,6 +35,7 @@ export interface User {
   role: UserRole;
   avatarUrl?: string;
   department?: string;
+  team?: string;
 }
 
 export interface AuthSession {
@@ -64,7 +65,9 @@ export interface ContentAsset {
 
   // Briefing Data
   hookStrategy?: string;        // Hook angles (first 3s / headline)
+  targetAudience?: string;      // Target audience / persona description
   platformSpecs?: string;       // e.g., 1080x1920, 9:16 safe margins, -14 LUFS
+  safeZoneRequirements?: string; // Platform safe zone specifications
   targetKpi?: string;           // e.g., 65% 3s Retention, CTR > 2%
   rawIntakeNotes?: string;       // Campaign raw bullet points
   generatedHooks?: HookVariation[];

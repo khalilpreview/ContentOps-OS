@@ -35,6 +35,11 @@ const SHORTCUT_CATEGORIES: ShortcutCategory[] = [
         keys: ['M'],
         label: 'Asset Multiplier',
         description: 'Launch 1-to-N derivative splitter for HERO assets'
+      },
+      {
+        keys: ['D'],
+        label: 'Velocity & SLA Dashboard',
+        description: 'Toggle 30-day velocity trends and SLA performance metrics'
       }
     ]
   },

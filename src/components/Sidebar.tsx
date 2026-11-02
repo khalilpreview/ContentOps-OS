@@ -11,14 +11,15 @@ import {
   PanelLeftOpen,
   LayoutGrid,
   Zap,
-  AlertTriangle
+  AlertTriangle,
+  TrendingUp
 } from 'lucide-react';
 import { ContentAsset, QuickFilterType, User } from '../types';
 import { isNeedsMySignOffAsset, isSlaRiskAsset, calculateSla } from '../lib/sla';
 
 interface SidebarProps {
-  currentView: 'pipeline' | 'sla' | 'multiplier' | 'archive';
-  onChangeView: (view: 'pipeline' | 'sla' | 'multiplier' | 'archive') => void;
+  currentView: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard';
+  onChangeView: (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard') => void;
   quickFilter: QuickFilterType;
   onChangeQuickFilter: (filter: QuickFilterType) => void;
   assets: ContentAsset[];
@@ -105,6 +106,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badgeColor: 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/30',
       isActive: currentView === 'multiplier',
       onClick: onOpenMultiplier
+    },
+    {
+      id: 'dashboard' as const,
+      label: 'Velocity & SLA Dashboard',
+      icon: TrendingUp,
+      badgeText: '30D',
+      badgeColor: 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/30',
+      isActive: currentView === 'dashboard',
+      onClick: () => {
+        onChangeQuickFilter('NONE');
+        onChangeView('dashboard');
+      }
     },
     {
       id: 'archive' as const,

@@ -10,7 +10,7 @@ import {
   UserRole
 } from '../types';
 import { AiConfig } from './aiService';
-import { INITIAL_ASSETS, SEED_USERS } from './seedData';
+import { DEMO_SEED_ASSETS, INITIAL_ASSETS, SEED_USERS } from './seedData';
 
 export const ASSETS_STORAGE_KEY = 'contentops_assets_data_v2';
 export const LEGACY_ASSETS_KEYS = ['contentops_assets_data', 'contentops_assets_data_v1'];
@@ -89,7 +89,30 @@ export function validateAndRepairAsset(
   const nowIso = new Date().toISOString();
 
   if (!isObject(raw)) {
-    const fallback = INITIAL_ASSETS[index % INITIAL_ASSETS.length] || INITIAL_ASSETS[0];
+    const fallback = DEMO_SEED_ASSETS[index % DEMO_SEED_ASSETS.length] || {
+      id: `asset-recovered-${Date.now()}-${index}`,
+      title: 'Recovered Brief',
+      pillar: 'CONTENT_OPS' as PillarType,
+      formatTier: 'HUB' as FormatTier,
+      status: 'DRAFT_BRIEF' as AssetStatus,
+      priority: 'MEDIUM' as Priority,
+      parentId: null,
+      slaHours: 48,
+      isSlaBreached: false,
+      qaToneApproved: false,
+      qaSpecsValidated: false,
+      qaRightsCleared: false,
+      qaGatekeeperSigned: false,
+      deliverableUrl: null,
+      attachmentCount: 0,
+      thumbnailUrl: null,
+      isWinningFormat: false,
+      paidEligible: false,
+      createdById: 'u-admin',
+      assignedToId: 'u-admin',
+      createdAt: nowIso,
+      updatedAt: nowIso
+    };
     return {
       asset: { ...fallback, id: `asset-recovered-${Date.now()}-${index}` },
       fixes: [`Replaced non-object asset record at index ${index} with baseline template`]
@@ -104,8 +127,8 @@ export function validateAndRepairAsset(
     fixes.push(`Generated missing asset ID (${id})`);
   }
 
-  // Match seed asset if available for smart default backfilling
-  const seedMatch = INITIAL_ASSETS.find((a) => a.id === id);
+  // Match demo asset if available for smart default backfilling
+  const seedMatch = DEMO_SEED_ASSETS.find((a) => a.id === id);
 
   const title =
     typeof raw.title === 'string' && raw.title.trim() !== ''
@@ -318,8 +341,14 @@ export function validateAndRepairAsset(
     parentTitle: typeof raw.parentTitle === 'string' ? raw.parentTitle : seedMatch?.parentTitle,
     hookStrategy:
       typeof raw.hookStrategy === 'string' ? raw.hookStrategy : seedMatch?.hookStrategy ?? '',
+    targetAudience:
+      typeof raw.targetAudience === 'string' ? raw.targetAudience : seedMatch?.targetAudience ?? '',
     platformSpecs:
       typeof raw.platformSpecs === 'string' ? raw.platformSpecs : seedMatch?.platformSpecs ?? '',
+    safeZoneRequirements:
+      typeof raw.safeZoneRequirements === 'string'
+        ? raw.safeZoneRequirements
+        : seedMatch?.safeZoneRequirements ?? '',
     targetKpi: typeof raw.targetKpi === 'string' ? raw.targetKpi : seedMatch?.targetKpi ?? '',
     rawIntakeNotes:
       typeof raw.rawIntakeNotes === 'string' ? raw.rawIntakeNotes : seedMatch?.rawIntakeNotes ?? '',
@@ -425,14 +454,17 @@ export function validateAndMigrateStorage(): ValidatedStorageState {
     if (rawAssetsJson !== null) {
       try {
         const parsed = JSON.parse(rawAssetsJson);
-        if (!Array.isArray(parsed) || parsed.length === 0) {
-          finalAssets = INITIAL_ASSETS;
+        if (!Array.isArray(parsed)) {
+          finalAssets = [];
           repairedKeys.add(ASSETS_STORAGE_KEY);
-          repairedAssetCount = INITIAL_ASSETS.length;
+          repairedAssetCount = 0;
           summaryMessages.push(
-            `Restored pipeline asset collection because "${ASSETS_STORAGE_KEY}" was not a valid non-empty array.`
+            `Initialized clean pipeline asset collection because "${ASSETS_STORAGE_KEY}" was not a valid array.`
           );
           localStorage.setItem(ASSETS_STORAGE_KEY, JSON.stringify(finalAssets));
+        } else if (parsed.length === 0) {
+          // Clean production empty state
+          finalAssets = [];
         } else {
           const migratedList: ContentAsset[] = [];
           const assetFixNotes: string[] = [];
@@ -462,11 +494,11 @@ export function validateAndMigrateStorage(): ValidatedStorageState {
           }
         }
       } catch {
-        finalAssets = INITIAL_ASSETS;
+        finalAssets = [];
         repairedKeys.add(ASSETS_STORAGE_KEY);
-        repairedAssetCount = INITIAL_ASSETS.length;
+        repairedAssetCount = 0;
         summaryMessages.push(
-          `Recovered "${ASSETS_STORAGE_KEY}" from corrupted JSON payload using baseline pipeline state.`
+          `Recovered "${ASSETS_STORAGE_KEY}" from corrupted JSON payload to a clean empty state.`
         );
         localStorage.setItem(ASSETS_STORAGE_KEY, JSON.stringify(finalAssets));
       }
@@ -549,7 +581,11 @@ export function validateAndMigrateStorage(): ValidatedStorageState {
               department:
                 typeof rawUser.department === 'string'
                   ? rawUser.department
-                  : matchedSeed?.department || 'Global Content & Brand Operations'
+                  : matchedSeed?.department || 'Global Content & Brand Operations',
+              team:
+                typeof rawUser.team === 'string'
+                  ? rawUser.team
+                  : matchedSeed?.team || 'Executive ContentOps Pod'
             },
             token: typeof parsed.token === 'string' ? parsed.token : `repaired-token-${Date.now()}`,
             provider,

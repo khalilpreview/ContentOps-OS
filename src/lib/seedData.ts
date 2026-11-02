@@ -7,7 +7,8 @@ export const SEED_USERS: User[] = [
     email: 'elena.vance@enterprise.io',
     role: 'CONTENT_MANAGER',
     avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-    department: 'Global Content & Brand Operations'
+    department: 'Global Content & Brand Operations',
+    team: 'Executive ContentOps Pod'
   },
   {
     id: 'u-cs',
@@ -15,7 +16,8 @@ export const SEED_USERS: User[] = [
     email: 'marcus.chen@enterprise.io',
     role: 'CREATIVE_SPECIALIST',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    department: 'Creative Studio / Motion & Video Pod'
+    department: 'Creative Studio / Motion & Video Pod',
+    team: 'Motion & Visual Creative Pod'
   },
   {
     id: 'u-sh',
@@ -23,7 +25,8 @@ export const SEED_USERS: User[] = [
     email: 'sarah.sterling@enterprise.io',
     role: 'STAKEHOLDER',
     avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
-    department: 'VP Brand Strategy & Product Marketing'
+    department: 'VP Brand Strategy & Product Marketing',
+    team: 'Brand Guardianship & Executive Review'
   },
   {
     id: 'u-dl',
@@ -31,14 +34,28 @@ export const SEED_USERS: User[] = [
     email: 'devon.ross@enterprise.io',
     role: 'DISTRIBUTION_LEAD',
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    department: 'Growth, PR & Omnichannel Syndication'
+    department: 'Growth, PR & Omnichannel Syndication',
+    team: 'Omnichannel Syndication & Paid Media'
   }
 ];
+
+export const DEFAULT_PRODUCTION_USER: User = {
+  id: 'u-admin',
+  name: 'ContentOps Admin',
+  email: 'admin@enterprise.io',
+  role: 'CONTENT_MANAGER',
+  avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+  department: 'Global Content & Brand Operations',
+  team: 'Executive ContentOps Pod'
+};
 
 const now = Date.now();
 const hour = 3600000;
 
-export const INITIAL_ASSETS: ContentAsset[] = [
+/**
+ * Optional sample / demo assets available on demand for testing, staging, and demo simulations.
+ */
+export const DEMO_SEED_ASSETS: ContentAsset[] = [
   {
     id: 'asset-draft-501',
     title: 'PromptOps v2: Synthetic Data Curation for Enterprise Voice',
@@ -231,16 +248,18 @@ export const INITIAL_ASSETS: ContentAsset[] = [
   {
     id: 'asset-qa-401',
     title: 'Weekly Tech Pulse: Multi-Agent Workflows Explained in 60s',
-    description: 'Bite-sized animated explainer breaking down how specialized coding and research agents coordinate.',
+    description: 'Bite-sized animated explainer breaking down how specialized coding and research agents coordinate without state drifting.',
     pillar: 'CONTENT_OPS',
     formatTier: 'HUB',
     status: 'QA_GATE',
     priority: 'HIGH',
     parentId: null,
-    hookStrategy: 'Direct Value: "One agent writes the test. Another writes the code. Here is how they avoid loops."',
-    platformSpecs: '1080x1920, 9:16 safe margins, -14 LUFS, 60fps, 58 seconds duration.',
-    targetKpi: '70% completion rate, 5k saves.',
-    rawIntakeNotes: 'Video rendered and deliverable uploaded. Waiting on Brand Guardianship 4-point QA Gatekeeper sign-off.',
+    hookStrategy: 'Direct Value: "One agent writes the test. Another writes the code. Here is how they avoid circular hallucination loops."',
+    targetAudience: 'Enterprise ContentOps leads, Creative Technologists, and PMs scaling automated generative pipelines.',
+    platformSpecs: '1080x1920 (9:16), 60fps, -14 LUFS stereo audio, 58 seconds duration, burnt-in kinetic captions.',
+    safeZoneRequirements: 'TikTok & IG Reels (9:16): 120px top clear zone (search/tabs), 180px bottom clear zone (captions/audio disk), 80px right rail clear zone (likes/comments/shares). Subtitles must stay in middle 65%.',
+    targetKpi: '70% 3-Second Retention Rate, >15% Share Rate, 5,000 saves on LinkedIn and TikTok.',
+    rawIntakeNotes: 'Master cut rendered and audio leveled to -14 LUFS. Waiting on Brand Guardianship 4-point QA Gatekeeper sign-off.',
     slaHours: 24,
     slaStartedAt: new Date(now - 30 * hour).toISOString(),
     slaExpiresAt: new Date(now - 6 * hour).toISOString(),
@@ -249,16 +268,50 @@ export const INITIAL_ASSETS: ContentAsset[] = [
     qaSpecsValidated: true,
     qaRightsCleared: false, // 2/4 Cleared Unsigned!
     qaGatekeeperSigned: false,
-    deliverableUrl: 'https://www.figma.com/proto/enterprise-ops/ep12-storyboard',
+    deliverableUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     attachmentCount: 2,
     thumbnailUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&auto=format&fit=crop&q=80',
     isWinningFormat: false,
     paidEligible: false,
     createdById: 'u-cs',
-    assignedToId: 'u-cm',
+    assignedToId: 'u-cs',
     targetPublishAt: new Date(now + 24 * hour).toISOString(),
     createdAt: new Date(now - 30 * hour).toISOString(),
     updatedAt: new Date(now - 1 * hour).toISOString()
+  },
+  {
+    id: 'asset-qa-402',
+    title: 'Brand Visual Proof: 2027 Typography & Color Tokens (Static 9:16 Keyframe)',
+    description: 'High-resolution vertical typography proof testing high-contrast dark theme styling and safe zone margins.',
+    pillar: 'BRAND_QA',
+    formatTier: 'HYGIENE',
+    status: 'QA_GATE',
+    priority: 'MEDIUM',
+    parentId: null,
+    hookStrategy: 'Contrarian: "Why bright neons fail accessibility unless balanced against deep obsidian backdrops."',
+    targetAudience: 'Brand Designers, UI/UX Engineers, and Design System Architects.',
+    platformSpecs: '1080x1920 static PNG proof, RGB Display P3, high-contrast typography hierarchy.',
+    safeZoneRequirements: 'Keep headline text inside central safe boundary; ensure bottom copyright is at least 200px above bottom bezel.',
+    targetKpi: '100% Brand compliance clearance across 6 regional marketing pods.',
+    rawIntakeNotes: 'Static image proof deliverable uploaded. Check typography contrast ratio against #00E599 green.',
+    slaHours: 24,
+    slaStartedAt: new Date(now - 14 * hour).toISOString(),
+    slaExpiresAt: new Date(now + 10 * hour).toISOString(),
+    isSlaBreached: false,
+    qaToneApproved: true,
+    qaSpecsValidated: false,
+    qaRightsCleared: true,
+    qaGatekeeperSigned: false,
+    deliverableUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1600&auto=format&fit=crop&q=80',
+    attachmentCount: 1,
+    thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+    isWinningFormat: false,
+    paidEligible: false,
+    createdById: 'u-cs',
+    assignedToId: 'u-cs',
+    targetPublishAt: new Date(now + 36 * hour).toISOString(),
+    createdAt: new Date(now - 14 * hour).toISOString(),
+    updatedAt: new Date(now - 2 * hour).toISOString()
   },
   {
     id: 'asset-hero-101',
@@ -346,3 +399,9 @@ export const INITIAL_ASSETS: ContentAsset[] = [
     updatedAt: new Date(now - 100 * hour).toISOString()
   }
 ];
+
+/**
+ * Production pipeline begins with a clean empty slate (0 mock assets).
+ * Teams create their real briefs or can optionally load DEMO_SEED_ASSETS for sandbox testing.
+ */
+export const INITIAL_ASSETS: ContentAsset[] = [];

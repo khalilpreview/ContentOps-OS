@@ -1,0 +1,3 @@
+# Netlify SPA & API Redirect Rules
+/api/ai/copilot   /.netlify/functions/copilot   200
+/*                /index.html                   200
