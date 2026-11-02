@@ -12,14 +12,15 @@ import {
   LayoutGrid,
   Zap,
   AlertTriangle,
-  TrendingUp
+  TrendingUp,
+  Crown
 } from 'lucide-react';
 import { ContentAsset, QuickFilterType, User } from '../types';
 import { isNeedsMySignOffAsset, isSlaRiskAsset, calculateSla } from '../lib/sla';
 
 interface SidebarProps {
-  currentView: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard';
-  onChangeView: (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard') => void;
+  currentView: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin';
+  onChangeView: (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin') => void;
   quickFilter: QuickFilterType;
   onChangeQuickFilter: (filter: QuickFilterType) => void;
   assets: ContentAsset[];
@@ -130,7 +131,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onChangeQuickFilter('NONE');
         onChangeView('archive');
       }
-    }
+    },
+    ...(currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'CONTENT_MANAGER' ? [{
+      id: 'admin' as const,
+      label: 'Super Admin & Team',
+      icon: Crown,
+      badgeText: 'RACI',
+      badgeColor: 'bg-[#FF4B55]/15 text-[#FF4B55] border border-[#FF4B55]/30',
+      isActive: currentView === 'admin',
+      onClick: () => {
+        onChangeQuickFilter('NONE');
+        onChangeView('admin');
+      }
+    }] : [])
   ];
 
   return (

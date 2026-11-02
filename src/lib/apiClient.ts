@@ -1,5 +1,5 @@
 import { getSupabaseClient } from './supabase';
-import type { AssetStatus, ContentAsset } from '../types';
+import type { AssetStatus, ContentAsset, User } from '../types';
 import type { AssetActivity } from './audit/types';
 
 /**
@@ -103,4 +103,116 @@ export async function fetchAssetActivities(assetId: string): Promise<AssetActivi
   }
 
   return [];
+}
+
+/**
+ * Fetch all users from Super Admin endpoint
+ */
+export async function fetchAdminUsers(): Promise<User[]> {
+  const headers = await getAuthHeaders();
+  const endpoints = ['/api/admin/users', '/.netlify/functions/admin-users'];
+
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        return data.users || [];
+      }
+    } catch {
+      // Continue
+    }
+  }
+  return [];
+}
+
+/**
+ * Super Admin invite user & dispatch magic link
+ */
+export async function inviteAdminUser(payload: {
+  email: string;
+  name?: string;
+  role: string;
+  team?: string;
+}): Promise<{ user: User; magicLinkSent: boolean; message: string }> {
+  const headers = await getAuthHeaders();
+  const endpoints = ['/api/admin/invite-user', '/.netlify/functions/admin-users'];
+
+  const body = {
+    ...payload,
+    redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+  };
+
+  let lastErr = null;
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        return await res.json();
+      }
+
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.message || errBody.error || `Invite failed (${res.status})`);
+    } catch (err) {
+      lastErr = err;
+      if (url === endpoints[0]) continue;
+      throw err;
+    }
+  }
+
+  throw lastErr || new Error('Network error calling invite endpoint');
+}
+
+/**
+ * Super Admin update user role
+ */
+export async function updateAdminUserRole(id: string, role: string): Promise<User | null> {
+  const headers = await getAuthHeaders();
+  const endpoints = [`/api/admin/users/${id}`, `/.netlify/functions/admin-users`];
+
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ id, role }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.user || null;
+      }
+    } catch {
+      // Continue
+    }
+  }
+  return null;
+}
+
+/**
+ * Super Admin remove user
+ */
+export async function deleteAdminUser(id: string): Promise<boolean> {
+  const headers = await getAuthHeaders();
+  const endpoints = [`/api/admin/users/${id}`, `/.netlify/functions/admin-users?id=${id}`];
+
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return Boolean(data.success);
+      }
+    } catch {
+      // Continue
+    }
+  }
+  return false;
 }

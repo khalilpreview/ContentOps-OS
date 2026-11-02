@@ -65,6 +65,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   const capacityPercent = Math.min(100, Math.round((activeCount / maxCapacity) * 100));
 
   const roleLabels: Record<UserRole, { label: string; badge: string; dotColor: string; textColor: string }> = {
+    SUPER_ADMIN: {
+      label: 'Super Administrator',
+      badge: 'All Permissions & Invites',
+      dotColor: 'bg-[#FF4B55]',
+      textColor: 'text-[#FF4B55]'
+    },
     CONTENT_MANAGER: {
       label: 'Content Manager',
       badge: 'Can Sign QA & Approve',

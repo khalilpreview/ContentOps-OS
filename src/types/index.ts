@@ -1,8 +1,11 @@
 export type UserRole = 
+  | 'SUPER_ADMIN'
   | 'CONTENT_MANAGER'
   | 'CREATIVE_SPECIALIST'
   | 'STAKEHOLDER'
   | 'DISTRIBUTION_LEAD';
+
+export type UserStatus = 'active' | 'invited' | 'suspended';
 
 export type PillarType =
   | 'STRATEGY_SERIES'
@@ -36,6 +39,9 @@ export interface User {
   avatarUrl?: string;
   department?: string;
   team?: string;
+  status?: UserStatus;
+  invitedAt?: string;
+  invitedBy?: string;
 }
 
 export interface AuthSession {

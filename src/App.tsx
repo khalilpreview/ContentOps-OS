@@ -14,11 +14,13 @@ import { QAInspectorModal } from './components/qa/QAInspectorModal';
 import { Dashboard } from './components/Dashboard';
 import { FloatingCopilot } from './components/copilot/FloatingCopilot';
 import { useCopilotContext } from './hooks/useCopilotContext';
+import { SuperAdminPage } from './components/SuperAdminPage';
 import { AssetStatus, ContentAsset, FormatTier, PillarType, QuickFilterType, User, UserRole } from './types';
 import { DEMO_SEED_ASSETS, INITIAL_ASSETS, SEED_USERS } from './lib/seedData';
 import { validateStatusTransition } from './lib/stateMachine';
 import { calculateSla } from './lib/sla';
 import { clearSession } from './lib/auth';
+import { serverTransitionAsset } from './lib/apiClient';
 import {
   ASSETS_STORAGE_KEY,
   USER_STORAGE_KEY,
@@ -173,14 +175,14 @@ export default function App() {
   });
 
   // Filters & Views
-  const [currentView, setCurrentView] = useState<'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard'>('pipeline');
+  const [currentView, setCurrentView] = useState<'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin'>('pipeline');
   const [selectedTier, setSelectedTier] = useState<FormatTier | 'ALL'>('ALL');
   const [selectedPillar, setSelectedPillar] = useState<PillarType | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterOnlySla, setFilterOnlySla] = useState(false);
   const [quickFilter, setQuickFilter] = useState<QuickFilterType>('NONE');
 
-  const handleChangeView = (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard') => {
+  const handleChangeView = (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin') => {
     setCurrentView(view);
     if (view === 'sla') {
       setFilterOnlySla(true);
@@ -192,9 +194,7 @@ export default function App() {
       } else {
         setIsNewAssetOpen(true);
       }
-    } else if (view === 'dashboard') {
-      setFilterOnlySla(false);
-    } else if (view === 'archive') {
+    } else if (view === 'dashboard' || view === 'archive' || view === 'admin') {
       setFilterOnlySla(false);
     } else {
       setFilterOnlySla(false);
@@ -413,7 +413,17 @@ export default function App() {
       updatedAt: new Date().toISOString()
     };
 
+    // Optimistic local update
     setAssets((prev) => prev.map((a) => (a.id === asset.id ? updated : a)));
+
+    // Wire to centralized server-side state machine enforcement & audit log
+    serverTransitionAsset({
+      assetId: asset.id,
+      targetStage: targetStatus,
+      reason: result.updatedAsset?.status ? `Advanced to ${targetStatus}` : undefined,
+    }).catch((serverErr) => {
+      console.warn('Backend serverTransitionAsset notice (continuing with database sync):', serverErr?.message);
+    });
 
     if (supabaseConfig.isConfigured) {
       upsertAssetToSupabase(updated).catch((err) => {
@@ -865,7 +875,22 @@ export default function App() {
           />
 
           <main className="flex-1 flex flex-col min-h-0 overflow-y-auto bg-[#0B0E14]">
-            {currentView === 'dashboard' ? (
+            {currentView === 'admin' ? (
+              <SuperAdminPage
+                currentUser={currentUser}
+                onRefreshUsers={(fetchedUsers) => {
+                  setAllUsers((prev) => {
+                    const merged = [...prev];
+                    fetchedUsers.forEach((fu) => {
+                      const idx = merged.findIndex((m) => m.id === fu.id || m.email.toLowerCase() === fu.email.toLowerCase());
+                      if (idx >= 0) merged[idx] = fu;
+                      else merged.push(fu);
+                    });
+                    return merged;
+                  });
+                }}
+              />
+            ) : currentView === 'dashboard' ? (
               <Dashboard
                 assets={assets}
                 currentUser={currentUser}

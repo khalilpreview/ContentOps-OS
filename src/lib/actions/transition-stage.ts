@@ -196,10 +196,10 @@ export async function transitionAssetStage(
 
   // 2. Guard: SLA_REVIEW -> IN_PRODUCTION
   if (currentStage === 'SLA_REVIEW' && targetStage === 'IN_PRODUCTION') {
-    // Only Stakeholders (or Content Managers acting on their behalf) can approve briefs
-    if (!['STAKEHOLDER', 'CONTENT_MANAGER'].includes(currentUser.role)) {
+    // Only Stakeholders, Content Managers, or Super Admin can approve briefs
+    if (!['STAKEHOLDER', 'CONTENT_MANAGER', 'SUPER_ADMIN'].includes(currentUser.role)) {
       throw new ForbiddenError(
-        `Cannot approve brief: Requires STAKEHOLDER or CONTENT_MANAGER role. (User has ${currentUser.role})`
+        `Cannot approve brief: Requires STAKEHOLDER, CONTENT_MANAGER, or SUPER_ADMIN role. (User has ${currentUser.role})`
       );
     }
   }
@@ -221,10 +221,10 @@ export async function transitionAssetStage(
 
   // 4. Guard: QA_GATE -> READY_TO_PUBLISH
   if (targetStage === 'READY_TO_PUBLISH') {
-    // Only Content Managers can approve final publication
-    if (currentUser.role !== 'CONTENT_MANAGER') {
+    // Content Managers and Super Admins can approve final publication
+    if (!['CONTENT_MANAGER', 'SUPER_ADMIN'].includes(currentUser.role)) {
       throw new ForbiddenError(
-        `Final sign-off denied: Only CONTENT_MANAGER can promote to READY_TO_PUBLISH. (User is ${currentUser.role})`
+        `Final sign-off denied: Only CONTENT_MANAGER or SUPER_ADMIN can promote to READY_TO_PUBLISH. (User is ${currentUser.role})`
       );
     }
 

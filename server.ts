@@ -276,6 +276,70 @@ async function startServer() {
     }
   });
 
+  // =========================================================================
+  // Super Admin: User Directory, Invite & Magic Link Dispatch
+  // =========================================================================
+  app.get('/api/admin/users', async (req, res) => {
+    try {
+      const { assertRole } = await import('./src/lib/auth/guard');
+      await assertRole(req, ['SUPER_ADMIN', 'CONTENT_MANAGER']);
+      const { getAllUsers } = await import('./src/lib/auth/sync-user');
+      const users = await getAllUsers();
+      res.json({ users });
+    } catch (err: any) {
+      const status = err.statusCode || 500;
+      res.status(status).json({ error: err.name || 'Error', message: err.message });
+    }
+  });
+
+  app.post('/api/admin/invite-user', async (req, res) => {
+    try {
+      const { assertRole } = await import('./src/lib/auth/guard');
+      const currentUser = await assertRole(req, ['SUPER_ADMIN', 'CONTENT_MANAGER']);
+      const { inviteUser } = await import('./src/lib/auth/sync-user');
+      const { email, name, role, team, redirectTo } = req.body;
+      const result = await inviteUser({
+        email,
+        name,
+        role,
+        team,
+        invitedBy: currentUser.name || currentUser.email,
+        redirectTo,
+      });
+      res.json(result);
+    } catch (err: any) {
+      const status = err.statusCode || 500;
+      res.status(status).json({ error: err.name || 'Error', message: err.message });
+    }
+  });
+
+  app.patch('/api/admin/users/:id', async (req, res) => {
+    try {
+      const { assertRole } = await import('./src/lib/auth/guard');
+      await assertRole(req, ['SUPER_ADMIN', 'CONTENT_MANAGER']);
+      const { promoteUserToRole } = await import('./src/lib/auth/sync-user');
+      const { role } = req.body;
+      const updated = await promoteUserToRole(req.params.id, role);
+      res.json({ user: updated });
+    } catch (err: any) {
+      const status = err.statusCode || 500;
+      res.status(status).json({ error: err.name || 'Error', message: err.message });
+    }
+  });
+
+  app.delete('/api/admin/users/:id', async (req, res) => {
+    try {
+      const { assertRole } = await import('./src/lib/auth/guard');
+      await assertRole(req, ['SUPER_ADMIN', 'CONTENT_MANAGER']);
+      const { removeUser } = await import('./src/lib/auth/sync-user');
+      const success = await removeUser(req.params.id);
+      res.json({ success });
+    } catch (err: any) {
+      const status = err.statusCode || 500;
+      res.status(status).json({ error: err.name || 'Error', message: err.message });
+    }
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: {

@@ -19,12 +19,20 @@ describe('Prompt 1: User Management, Session Context & Server-Side RBAC', () => 
     assert.equal(user.email, 'jane.specialist@test.com');
   });
 
-  it('promotes designated email to CONTENT_MANAGER upon registration', async () => {
+  it('promotes designated email to SUPER_ADMIN upon registration', async () => {
     const admin = await syncUser({
       id: 'test-admin-1',
       email: 'elena@thrill.com',
     });
-    assert.equal(admin.role, 'CONTENT_MANAGER');
+    assert.equal(admin.role, 'SUPER_ADMIN');
+  });
+
+  it('promotes designated email to CONTENT_MANAGER upon registration', async () => {
+    const manager = await syncUser({
+      id: 'test-cm-1',
+      email: 'content.manager@thrill.com',
+    });
+    assert.equal(manager.role, 'CONTENT_MANAGER');
   });
 
   it('assertRole permits authorized roles and throws ForbiddenError for unauthorized roles', async () => {
@@ -149,5 +157,43 @@ describe('Prompt 4: Enterprise Audit Trail & Revision History', () => {
     assert.equal(activities[0].performedBy, 'u-cm');
     assert.equal(activities[0].newStage, 'SLA_REVIEW');
     assert.equal(activities[0].action, 'STAGE_TRANSITION');
+  });
+});
+
+describe('Prompt 5: Super Admin Invite & Magic Link Integration', () => {
+  it('pre-provisions invited user and flags magicLinkSent', async () => {
+    const { inviteUser, getAllUsers } = await import('../src/lib/auth/sync-user');
+    const result = await inviteUser({
+      email: 'newoperator@agency.com',
+      name: 'New Operator',
+      role: 'DISTRIBUTION_LEAD',
+      team: 'Growth Syndication Pod',
+      invitedBy: 'Elena Vance',
+    });
+
+    assert.equal(result.user.email, 'newoperator@agency.com');
+    assert.equal(result.user.role, 'DISTRIBUTION_LEAD');
+    assert.equal(result.user.status, 'invited');
+    assert.ok(result.magicLinkSent);
+
+    const users = await getAllUsers();
+    const found = users.find((u) => u.email === 'newoperator@agency.com');
+    assert.ok(found);
+    assert.equal(found.role, 'DISTRIBUTION_LEAD');
+  });
+
+  it('isTransitionPermittedForRole permits Super Admin across all transitions', async () => {
+    const { isTransitionPermittedForRole } = await import('../src/lib/stateMachine');
+    assert.equal(isTransitionPermittedForRole('DRAFT_BRIEF', 'SLA_REVIEW', 'SUPER_ADMIN'), true);
+    assert.equal(isTransitionPermittedForRole('SLA_REVIEW', 'IN_PRODUCTION', 'SUPER_ADMIN'), true);
+    assert.equal(isTransitionPermittedForRole('IN_PRODUCTION', 'QA_GATE', 'SUPER_ADMIN'), true);
+    assert.equal(isTransitionPermittedForRole('QA_GATE', 'READY_TO_PUBLISH', 'SUPER_ADMIN'), true);
+    assert.equal(isTransitionPermittedForRole('READY_TO_PUBLISH', 'PUBLISHED', 'SUPER_ADMIN'), true);
+  });
+
+  it('isTransitionPermittedForRole restricts Specialist from QA_GATE to READY_TO_PUBLISH', async () => {
+    const { isTransitionPermittedForRole } = await import('../src/lib/stateMachine');
+    assert.equal(isTransitionPermittedForRole('QA_GATE', 'READY_TO_PUBLISH', 'CREATIVE_SPECIALIST'), false);
+    assert.equal(isTransitionPermittedForRole('QA_GATE', 'READY_TO_PUBLISH', 'CONTENT_MANAGER'), true);
   });
 });

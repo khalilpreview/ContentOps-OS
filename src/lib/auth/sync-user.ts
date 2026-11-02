@@ -2,11 +2,16 @@ import { getServerSupabaseClient, getServerSupabaseConfig } from '../serverSupab
 import { User, UserRole } from './types';
 import { SEED_USERS } from '../seedData';
 
+// Designated emails automatically promoted to SUPER_ADMIN
+export const DESIGNATED_SUPER_ADMINS = [
+  'elena@thrill.com',
+  'admin@thrill.com',
+  'superadmin@thrill.com'
+];
+
 // Designated emails automatically promoted to CONTENT_MANAGER
 export const DESIGNATED_CONTENT_MANAGERS = [
-  'elena@thrill.com',
   'content.manager@thrill.com',
-  'admin@thrill.com',
   'elena.vance@thrill.com'
 ];
 
@@ -36,12 +41,13 @@ export interface AuthUserInput {
 /**
  * Synchronizes a Supabase Auth user into the database profiles/user table.
  * If user does not exist, provisions a new record with default role 'CREATIVE_SPECIALIST'
- * (or 'CONTENT_MANAGER' if email is designated).
+ * (or 'SUPER_ADMIN' / 'CONTENT_MANAGER' if email is designated).
  */
 export async function syncUser(authUser: AuthUserInput): Promise<User> {
   const email = (authUser.email || '').trim().toLowerCase();
   const id = authUser.id;
-  const isDesignatedAdmin = DESIGNATED_CONTENT_MANAGERS.includes(email);
+  const isSuperAdmin = DESIGNATED_SUPER_ADMINS.includes(email);
+  const isContentManager = DESIGNATED_CONTENT_MANAGERS.includes(email);
   const metadata = authUser.user_metadata || {};
 
   const name =
@@ -52,7 +58,9 @@ export async function syncUser(authUser: AuthUserInput): Promise<User> {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
 
-  const resolvedRole: UserRole = isDesignatedAdmin
+  const resolvedRole: UserRole = isSuperAdmin
+    ? 'SUPER_ADMIN'
+    : isContentManager
     ? 'CONTENT_MANAGER'
     : (metadata.role as UserRole) || 'CREATIVE_SPECIALIST';
 
@@ -135,7 +143,9 @@ export async function syncUser(authUser: AuthUserInput): Promise<User> {
     };
     fallbackUserStore.set(id, local);
     if (email) fallbackUserStore.set(email, local);
-  } else if (isDesignatedAdmin && local.role !== 'CONTENT_MANAGER') {
+  } else if (isSuperAdmin && local.role !== 'SUPER_ADMIN') {
+    local.role = 'SUPER_ADMIN';
+  } else if (isContentManager && local.role !== 'CONTENT_MANAGER' && local.role !== 'SUPER_ADMIN') {
     local.role = 'CONTENT_MANAGER';
   }
 
@@ -192,4 +202,184 @@ export async function promoteUserToRole(
 export function getUserById(identifier: string): User | null {
   const trimmed = identifier.trim().toLowerCase();
   return fallbackUserStore.get(identifier) || fallbackUserStore.get(trimmed) || null;
+}
+
+/**
+ * Return all registered/synced users from Supabase or fallback store
+ */
+export async function getAllUsers(): Promise<User[]> {
+  const config = getServerSupabaseConfig();
+  if (config.isConfigured) {
+    try {
+      const supabase = getServerSupabaseClient();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        return data.map((d: any) => ({
+          id: d.id,
+          name: d.name || d.email?.split('@')[0] || 'Operator',
+          email: d.email || '',
+          role: d.role as UserRole,
+          avatarUrl: d.avatar_url,
+          team: d.team,
+          status: d.status || 'active',
+          invitedAt: d.invited_at,
+          invitedBy: d.invited_by,
+        }));
+      }
+    } catch (err) {
+      console.warn('getAllUsers Supabase error:', err);
+    }
+  }
+
+  // Deduplicate fallback store
+  const seen = new Set<string>();
+  const users: User[] = [];
+  fallbackUserStore.forEach((u) => {
+    if (!seen.has(u.id)) {
+      seen.add(u.id);
+      users.push(u);
+    }
+  });
+  return users;
+}
+
+/**
+ * Super Admin invite user:
+ * Pre-provisions user record in profiles and issues a Supabase Auth Magic Link invitation.
+ */
+export async function inviteUser(params: {
+  email: string;
+  name?: string;
+  role: UserRole;
+  team?: string;
+  invitedBy?: string;
+  redirectTo?: string;
+}): Promise<{ user: User; magicLinkSent: boolean; message: string }> {
+  const email = params.email.trim().toLowerCase();
+  const name = params.name?.trim() || email.split('@')[0];
+  const role = params.role || 'CREATIVE_SPECIALIST';
+  const team = params.team || 'Executive ContentOps Pod';
+  const config = getServerSupabaseConfig();
+
+  const tempId = `u-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  const now = new Date().toISOString();
+
+  let magicLinkSent = false;
+  let resultUser: User = {
+    id: tempId,
+    name,
+    email,
+    role,
+    team,
+    status: 'invited',
+    invitedAt: now,
+    invitedBy: params.invitedBy,
+    avatarUrl: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80`,
+  };
+
+  if (config.isConfigured) {
+    const supabase = getServerSupabaseClient();
+    try {
+      // 1. Check if user already exists in profiles
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
+
+      const targetId = existing?.id || tempId;
+      resultUser.id = targetId;
+
+      // 2. Pre-provision/update in profiles
+      await supabase.from('profiles').upsert({
+        id: targetId,
+        email,
+        name,
+        role,
+        team,
+        status: 'invited',
+        invited_at: now,
+        invited_by: params.invitedBy,
+        avatar_url: resultUser.avatarUrl,
+        updated_at: now,
+      });
+
+      // 3. Trigger Supabase Auth Magic Link
+      // First try auth.admin.inviteUserByEmail if service role key is available
+      try {
+        const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email, {
+          data: { name, role, team },
+          redirectTo: params.redirectTo || 'https://thrill-contentops.netlify.app',
+        });
+
+        if (!inviteErr) {
+          magicLinkSent = true;
+        } else {
+          // Fallback to signInWithOtp
+          const { error: otpErr } = await supabase.auth.signInWithOtp({
+            email,
+            options: {
+              emailRedirectTo: params.redirectTo || 'https://thrill-contentops.netlify.app',
+              data: { name, role, team },
+            },
+          });
+          if (!otpErr) magicLinkSent = true;
+        }
+      } catch (authCallErr: any) {
+        console.warn('Supabase invite magic link error (falling back to signInWithOtp):', authCallErr?.message);
+        const { error: otpErr } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: params.redirectTo || 'https://thrill-contentops.netlify.app',
+            data: { name, role, team },
+          },
+        });
+        if (!otpErr) magicLinkSent = true;
+      }
+    } catch (err: any) {
+      console.warn('inviteUser error:', err);
+    }
+  } else {
+    // Offline / Demo mode simulation: Magic link is simulated
+    magicLinkSent = true;
+  }
+
+  // Update in fallback store
+  fallbackUserStore.set(resultUser.id, resultUser);
+  fallbackUserStore.set(resultUser.email, resultUser);
+
+  return {
+    user: resultUser,
+    magicLinkSent,
+    message: magicLinkSent
+      ? `Invitation and Magic Link sent to ${email} with role '${role}'.`
+      : `User pre-provisioned in database, but email dispatch was queued.`,
+  };
+}
+
+/**
+ * Super Admin user deletion / revocation
+ */
+export async function removeUser(id: string): Promise<boolean> {
+  const config = getServerSupabaseConfig();
+  if (config.isConfigured) {
+    try {
+      const supabase = getServerSupabaseClient();
+      await supabase.from('profiles').delete().eq('id', id);
+    } catch (err) {
+      console.warn('removeUser error:', err);
+    }
+  }
+
+  const user = fallbackUserStore.get(id);
+  if (user) {
+    fallbackUserStore.delete(id);
+    if (user.email) fallbackUserStore.delete(user.email);
+    return true;
+  }
+  return false;
 }

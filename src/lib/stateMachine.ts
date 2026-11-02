@@ -1,11 +1,59 @@
-import { AssetStatus, ContentAsset, TransitionResult, User } from '../types';
+import { AssetStatus, ContentAsset, TransitionResult, User, UserRole } from '../types';
 
 /**
  * Checks whether the active user has permission to toggle the 4th QA checkbox
  * ("Gatekeeper Final Sign-off") in Stage 4.
  */
 export function canToggleGatekeeperSignOff(currentUser: User): boolean {
-  return currentUser.role === 'CONTENT_MANAGER';
+  return currentUser.role === 'CONTENT_MANAGER' || currentUser.role === 'SUPER_ADMIN';
+}
+
+/**
+ * Returns true if the user's role has permission to move a card between the two stages.
+ */
+export function isTransitionPermittedForRole(
+  fromStatus: AssetStatus,
+  toStatus: AssetStatus,
+  role: UserRole
+): boolean {
+  if (role === 'SUPER_ADMIN') return true;
+
+  // Stage 1 -> Stage 2: Drafting -> SLA Review
+  if (fromStatus === 'DRAFT_BRIEF' && toStatus === 'SLA_REVIEW') {
+    return true; // Any specialist or manager can submit draft to review
+  }
+
+  // Revert Stage 2 -> Stage 1
+  if (fromStatus === 'SLA_REVIEW' && toStatus === 'DRAFT_BRIEF') {
+    return role === 'STAKEHOLDER' || role === 'CONTENT_MANAGER';
+  }
+
+  // Stage 2 -> Stage 3: SLA Review -> Production
+  if (fromStatus === 'SLA_REVIEW' && toStatus === 'IN_PRODUCTION') {
+    return role === 'STAKEHOLDER' || role === 'CONTENT_MANAGER';
+  }
+
+  // Stage 3 -> Stage 4: Production -> QA Gate
+  if (fromStatus === 'IN_PRODUCTION' && toStatus === 'QA_GATE') {
+    return role === 'CREATIVE_SPECIALIST' || role === 'CONTENT_MANAGER';
+  }
+
+  // Revert Stage 4 -> Stage 3
+  if (fromStatus === 'QA_GATE' && toStatus === 'IN_PRODUCTION') {
+    return role === 'CONTENT_MANAGER' || role === 'CREATIVE_SPECIALIST';
+  }
+
+  // Stage 4 -> Stage 5: QA Gate -> Ready to Publish
+  if (fromStatus === 'QA_GATE' && toStatus === 'READY_TO_PUBLISH') {
+    return role === 'CONTENT_MANAGER';
+  }
+
+  // Stage 5 -> Archive: Ready to Publish -> Published
+  if (fromStatus === 'READY_TO_PUBLISH' && toStatus === 'PUBLISHED') {
+    return role === 'DISTRIBUTION_LEAD' || role === 'CONTENT_MANAGER';
+  }
+
+  return false;
 }
 
 /**
@@ -72,11 +120,11 @@ export function validateStatusTransition(
 
   // 2. Transition: SLA_REVIEW -> IN_PRODUCTION
   if (currentStatus === 'SLA_REVIEW' && targetStatus === 'IN_PRODUCTION') {
-    const isAuthorized = currentUser.role === 'STAKEHOLDER' || currentUser.role === 'CONTENT_MANAGER';
+    const isAuthorized = currentUser.role === 'STAKEHOLDER' || currentUser.role === 'CONTENT_MANAGER' || currentUser.role === 'SUPER_ADMIN';
     if (!isAuthorized) {
       return {
         allowed: false,
-        reason: `RACI Gate Block: Only Stakeholder or Content Manager can sign off on SLA Review. (Active Role: ${currentUser.role})`
+        reason: `RACI Gate Block: Only Stakeholder, Content Manager, or Super Admin can sign off on SLA Review. (Active Role: ${currentUser.role})`
       };
     }
 
@@ -154,11 +202,11 @@ export function validateStatusTransition(
 
   // 5. Transition: READY_TO_PUBLISH -> PUBLISHED
   if (currentStatus === 'READY_TO_PUBLISH' && targetStatus === 'PUBLISHED') {
-    const isAuthorized = currentUser.role === 'DISTRIBUTION_LEAD' || currentUser.role === 'CONTENT_MANAGER';
+    const isAuthorized = currentUser.role === 'DISTRIBUTION_LEAD' || currentUser.role === 'CONTENT_MANAGER' || currentUser.role === 'SUPER_ADMIN';
     if (!isAuthorized) {
       return {
         allowed: false,
-        reason: `Only Distribution Lead or Content Manager can mark an asset as Published. (Active Role: ${currentUser.role})`
+        reason: `Only Distribution Lead, Content Manager, or Super Admin can mark an asset as Published. (Active Role: ${currentUser.role})`
       };
     }
 

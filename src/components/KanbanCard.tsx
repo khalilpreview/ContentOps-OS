@@ -7,8 +7,9 @@ import {
   Check,
   Paperclip
 } from 'lucide-react';
-import { ContentAsset, User, FormatTier } from '../types';
+import { ContentAsset, User, FormatTier, AssetStatus } from '../types';
 import { calculateSla } from '../lib/sla';
+import { isTransitionPermittedForRole } from '../lib/stateMachine';
 
 interface KanbanCardProps {
   asset: ContentAsset;
@@ -26,6 +27,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   onOpenDetail,
   onOpenMultiplier,
   onQuickAdvance,
+  currentUser,
   onDragStart
 }) => {
   const slaInfo = calculateSla(asset);
@@ -175,17 +177,41 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
           )}
 
           {/* Quick Advance Button */}
-          {asset.status !== 'PUBLISHED' && (
-            <button
-              type="button"
-              onClick={(e) => onQuickAdvance(asset, e)}
-              className="p-1 rounded-md hover:bg-[#121620] text-[#8F9CAE] hover:text-[#00E599] transition-colors cursor-pointer"
-              title="Advance to Next Stage"
-              aria-label={`Advance ${asset.title}`}
-            >
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          )}
+          {asset.status !== 'PUBLISHED' && (() => {
+            const nextStatusMap: Record<AssetStatus, AssetStatus | null> = {
+              DRAFT_BRIEF: 'SLA_REVIEW',
+              SLA_REVIEW: 'IN_PRODUCTION',
+              IN_PRODUCTION: 'QA_GATE',
+              QA_GATE: 'READY_TO_PUBLISH',
+              READY_TO_PUBLISH: 'PUBLISHED',
+              PUBLISHED: null,
+            };
+            const next = nextStatusMap[asset.status];
+            const isPermitted = next ? isTransitionPermittedForRole(asset.status, next, currentUser.role) : false;
+
+            return (
+              <button
+                type="button"
+                onClick={(e) => {
+                  onQuickAdvance(asset, e);
+                }}
+                disabled={!isPermitted}
+                className={`p-1 rounded-md transition-colors cursor-pointer ${
+                  isPermitted
+                    ? 'hover:bg-[#121620] text-[#8F9CAE] hover:text-[#00E599]'
+                    : 'text-white/20 hover:text-white/30 cursor-not-allowed opacity-40'
+                }`}
+                title={
+                  isPermitted
+                    ? `Advance to next stage (${next})`
+                    : `Permission restricted: ${currentUser.role} cannot move card from ${asset.status} to ${next}`
+                }
+                aria-label={`Advance ${asset.title}`}
+              >
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            );
+          })()}
         </div>
       </div>
     </div>
