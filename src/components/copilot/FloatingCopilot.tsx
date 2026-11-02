@@ -10,16 +10,7 @@ import {
   Check, 
   Filter,
   FilePlus2,
-  Bot,
-  Maximize2,
-  Minimize2,
-  Mic,
-  MicOff,
-  Trash2,
-  Download,
-  AlertTriangle,
-  Flame,
-  FileText
+  Bot
 } from 'lucide-react';
 import { AssetStatus, ContentAsset, FormatTier, User } from '../../types';
 import { CopilotSystemContext } from '../../hooks/useCopilotContext';
@@ -48,7 +39,6 @@ interface FloatingCopilotProps {
     hookStrategy?: string;
     platformSpecs?: string;
   }) => void;
-  onBatchTransition?: (assetIds: string[], targetStage: AssetStatus) => void;
 }
 
 interface ChatEntry {
@@ -60,8 +50,6 @@ interface ChatEntry {
   toolCalls?: CopilotToolCall[];
 }
 
-const STORAGE_CHAT_KEY = 'contentops_copilot_chat_history_v2';
-
 export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
   context,
   assets,
@@ -70,165 +58,39 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
   onSignOffQa,
   onTriggerMultiplier,
   onFilterBoard,
-  onDraftBrief,
-  onBatchTransition
+  onDraftBrief
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isDrawerMode, setIsDrawerMode] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('contentops_copilot_drawer_mode') === 'true';
-    } catch {
-      return false;
-    }
-  });
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [showBriefingBanner, setShowBriefingBanner] = useState(true);
   const [toolCallStates, setToolCallStates] = useState<Record<string, 'pending' | 'executed' | 'cancelled'>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const speechRecognitionRef = useRef<any>(null);
 
   const attentionCount =
     context.pipelineSummary.breachedCount +
     context.pipelineSummary.pendingQASignoffs;
 
-  // Initialize or restore conversation history
-  const [entries, setEntries] = useState<ChatEntry[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_CHAT_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch {
-      // ignore
+  const [entries, setEntries] = useState<ChatEntry[]>(() => [
+    {
+      id: 'welcome-1',
+      role: 'assistant',
+      content: `Online and synchronized with **Thrill ContentOps OS**.\n\nMonitoring **${context.pipelineSummary.activePipelineCount} active assets** for **${currentUser.name} (${currentUser.role})**. Select a quick command below or ask me to audit QA gates, split HERO assets, or triage SLA risks.`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      engineUsed: 'IFM.ai K2 Horizon'
     }
+  ]);
 
-    return [
-      {
-        id: 'welcome-1',
-        role: 'assistant',
-        content: `Online & synchronized with **Thrill ContentOps OS**.\n\nMonitoring **${context.pipelineSummary.activePipelineCount} active assets** for **${currentUser.name} (${currentUser.role})**.\n\n💡 *Pro-tip: Press **Cmd+J** or **Ctrl+J** anywhere to toggle this copilot.*`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        engineUsed: 'Google Gemini 2.0 Flash'
-      }
-    ];
-  });
-
-  // Save conversation history to local storage
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_CHAT_KEY, JSON.stringify(entries));
-    } catch {
-      // ignore
-    }
-  }, [entries]);
-
-  // Global Keyboard Shortcut: Cmd+J or Ctrl+J to toggle Copilot
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'j' || e.key === 'J')) {
-        e.preventDefault();
-        setIsOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // Auto-scroll on new message
   useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [entries, isOpen]);
 
-  // Web Speech API Voice Recognition Toggle
-  const toggleSpeechRecognition = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
-      return;
-    }
-
-    if (isListening) {
-      speechRecognitionRef.current?.stop();
-      setIsListening(false);
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => setIsListening(true);
-      recognition.onend = () => setIsListening(false);
-      recognition.onerror = () => setIsListening(false);
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        if (transcript) {
-          setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
-        }
-      };
-
-      speechRecognitionRef.current = recognition;
-      recognition.start();
-    } catch (err) {
-      console.warn('Speech recognition error:', err);
-      setIsListening(false);
-    }
-  };
-
-  const handleClearChat = () => {
-    if (confirm('Clear Copilot conversation history?')) {
-      const resetEntry: ChatEntry = {
-        id: `welcome-${Date.now()}`,
-        role: 'assistant',
-        content: `Conversation reset. Ready for new operational commands for **${currentUser.name}**.`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        engineUsed: 'Google Gemini 2.0 Flash'
-      };
-      setEntries([resetEntry]);
-      localStorage.removeItem(STORAGE_CHAT_KEY);
-    }
-  };
-
-  const handleExportChat = () => {
-    const markdown = entries
-      .map((e) => `### ${e.role.toUpperCase()} (${e.timestamp})\n${e.content}\n`)
-      .join('\n---\n\n');
-    const blob = new Blob([markdown], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `thrill-copilot-log-${Date.now()}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const toggleDrawerMode = () => {
-    setIsDrawerMode((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem('contentops_copilot_drawer_mode', String(next));
-      } catch {
-        // ignore
-      }
-      return next;
-    });
-  };
-
   const quickChips = [
     '⚠️ What requires my attention right now?',
-    '📊 Generate executive report',
-    "⚡ Split flagship Hero into 3 shorts",
+    "⚡ Split 'Executive Briefing' into 3 shorts",
     '🛡️ Audit Stage 4 QA',
-    '📦 Batch-publish approved cards'
+    '📊 Show capacity & SLA health'
   ];
 
   const handleSend = async (promptText?: string) => {
@@ -263,7 +125,7 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
         role: 'assistant',
         content: reply.content,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        engineUsed: reply.engineUsed || 'Google Gemini 2.0 Flash',
+        engineUsed: reply.engineUsed || 'IFM.ai K2 Horizon',
         toolCalls: reply.tool_calls
       };
 
@@ -282,7 +144,7 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
         {
           id: `err-${Date.now()}`,
           role: 'assistant',
-          content: 'Unable to reach Copilot engine relay. Please retry.',
+          content: 'Unable to reach K2 Horizon copilot relay. Please retry.',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -312,17 +174,11 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
         onFilterBoard(args.filterType);
       } else if (fnName === 'draft_brief') {
         onDraftBrief({
-          title: args.title || 'Untitled Copilot Brief',
+          title: args.title || 'Untitled K2 Brief',
           formatTier: (args.formatTier as FormatTier) || 'HUB',
           hookStrategy: args.hookStrategy,
           platformSpecs: args.platformSpecs
         });
-      } else if (fnName === 'batch_transition_assets') {
-        if (onBatchTransition && Array.isArray(args.assetIds)) {
-          onBatchTransition(args.assetIds, args.targetStage as AssetStatus);
-        } else if (Array.isArray(args.assetIds)) {
-          args.assetIds.forEach((id: string) => onMoveAssetStage(id, args.targetStage as AssetStatus));
-        }
       }
 
       setToolCallStates((prev) => ({ ...prev, [tc.id]: 'executed' }));
@@ -348,32 +204,27 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
       if (fnName === 'move_asset_stage') {
         const found = assets.find((a) => a.id === args.assetId);
         const title = found ? found.title : args.assetId;
+        const extra =
+          args.targetStage === 'SLA_REVIEW'
+            ? 'SLA Clock: 48 Hours will be activated.'
+            : args.reason || 'Deterministic state machine transition.';
         return {
-          badge: 'ACTION: Advance Card',
+          badge: 'PROPOSED ACTION: Advance Card',
           headline: `Move "${title}" ➔ ${args.targetStage}`,
-          subline: args.reason || 'Deterministic state machine transition.'
-        };
-      }
-
-      if (fnName === 'batch_transition_assets') {
-        const count = Array.isArray(args.assetIds) ? args.assetIds.length : 0;
-        return {
-          badge: 'BATCH ACTION: Bulk Transition',
-          headline: `Advance ${count} cards simultaneously ➔ ${args.targetStage}`,
-          subline: args.reason || 'Batch operational transition across active pipeline.'
+          subline: extra
         };
       }
 
       if (fnName === 'sign_off_qa') {
         const found = assets.find((a) => a.id === args.assetId);
         const title = found ? found.title : args.assetId;
-        const canSignFinal = (currentUser.role === 'CONTENT_MANAGER' || currentUser.role === 'SUPER_ADMIN') && args.finalSignoff;
+        const canSignFinal = currentUser.role === 'CONTENT_MANAGER' && args.finalSignoff;
         return {
-          badge: 'ACTION: Stage 4 QA Sign-Off',
+          badge: 'PROPOSED ACTION: Stage 4 QA Sign-Off',
           headline: `Clear 4-Point QA Gatekeeper for "${title}"`,
           subline: canSignFinal
-            ? `Stamp Gatekeeper Final Sign-off as ${currentUser.name} (${currentUser.role}) & advance to Stage 5.`
-            : `Verify checklist items 1–3 (Final Gatekeeper Sign-off requires Content Manager / Super Admin).`
+            ? `Stamp Gatekeeper Final Sign-off as ${currentUser.name} (Content Manager) & advance to Stage 5.`
+            : `Verify checklist items 1–3 (Final Gatekeeper Sign-off requires Content Manager role).`
         };
       }
 
@@ -381,7 +232,7 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
         const found = assets.find((a) => a.id === args.parentAssetId);
         const title = found ? found.title : args.parentAssetId;
         return {
-          badge: 'ACTION: Asset Multiplier Split',
+          badge: 'PROPOSED ACTION: Asset Multiplier Split',
           headline: `Split "${title}" ➔ ${args.derivativeCount || 3} Child Tickets`,
           subline: 'Spawns Short-form Reel (9:16), LinkedIn Carousel (1:1), and Quote Card / X Thread in Stage 1.'
         };
@@ -389,7 +240,7 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
 
       if (fnName === 'filter_board') {
         return {
-          badge: 'ACTION: Filter Kanban View',
+          badge: 'PROPOSED ACTION: Filter Kanban View',
           headline: `Apply Board Filter ➔ ${args.filterType}`,
           subline: 'Focuses active Kanban columns on matching operational items.'
         };
@@ -397,185 +248,133 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
 
       if (fnName === 'draft_brief') {
         return {
-          badge: 'ACTION: Draft Creative Brief',
-          headline: `Create Stage 1 Card: "${args.title}"`,
-          subline: `Tier: ${args.formatTier} • Includes 3s Retention Hook Strategy.`
+          badge: 'PROPOSED ACTION: Initialize Brief',
+          headline: `Create "${args.title}" (${args.formatTier})`,
+          subline: `Specs: ${args.platformSpecs || '1080x1920, 9:16 safe margins, -14 LUFS'}`
         };
       }
-
-      return {
-        badge: 'ACTION: Operational Command',
-        headline: fnName.replace(/_/g, ' ').toUpperCase(),
-        subline: JSON.stringify(args)
-      };
     } catch {
-      return {
-        badge: 'ACTION: Unknown Command',
-        headline: tc.function.name,
-        subline: tc.function.arguments
-      };
+      // fallback
     }
+    return {
+      badge: 'PROPOSED ACTION',
+      headline: tc.function.name,
+      subline: tc.function.arguments
+    };
   };
 
   return (
-    <>
-      {/* Floating Launcher Button (Bottom-Right) */}
-      {!isOpen && (
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-2xl bg-gradient-to-br from-[#00E599] to-[#00b377] text-[#0B0E14] shadow-2xl shadow-[#00E599]/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer group"
-          title="Open Thrill Copilot (Cmd+J / Ctrl+J)"
-        >
-          <Sparkles className="h-6 w-6 stroke-[2.2] group-hover:rotate-12 transition-transform" />
-          {attentionCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 h-5 min-w-5 px-1.5 rounded-full bg-[#FF4B55] text-white text-[10px] font-black flex items-center justify-center border-2 border-[#0B0E14] shadow-md animate-pulse">
-              {attentionCount}
-            </span>
-          )}
-        </button>
-      )}
-
-      {/* Main Copilot Shell: Floating Dialog OR Full Height Right Drawer */}
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end select-none">
+      {/* Expandable Glassmorphism Chat Drawer */}
       {isOpen && (
         <div
-          className={`fixed z-50 transition-all duration-300 ease-in-out flex flex-col bg-[#121620] border border-white/[0.12] shadow-2xl overflow-hidden ${
-            isDrawerMode
-              ? 'top-0 right-0 bottom-0 w-full sm:w-[540px] md:w-[600px] h-full rounded-none border-y-0 border-r-0'
-              : 'bottom-6 right-6 w-[calc(100vw-3rem)] sm:w-[440px] max-w-[460px] h-[640px] max-h-[85vh] rounded-2xl'
-          }`}
+          role="dialog"
+          aria-label="Thrill Copilot Assistant"
+          className="mb-3 w-[calc(100vw-2rem)] sm:w-[420px] h-[600px] max-h-[calc(100vh-7rem)] bg-[#0B0E14]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl flex flex-col overflow-hidden text-white"
         >
-          {/* Header */}
-          <div className="px-4 py-3 bg-[#181E2C] border-b border-white/[0.08] flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#00E599] to-[#00b377] text-[#0B0E14] flex items-center justify-center font-bold shadow-sm">
-                <Sparkles className="h-4 w-4 stroke-[2.5]" />
+          {/* Drawer Header */}
+          <div className="px-4 py-3.5 bg-[#121620] border-b border-white/[0.08] flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="h-8 w-8 rounded-lg bg-[#00E599]/15 border border-[#00E599]/40 text-[#00E599] flex items-center justify-center shrink-0">
+                <Bot className="h-4 w-4" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-white tracking-tight">Thrill Copilot</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/30">
-                    GEMINI 2.0
-                  </span>
+                  <span className="h-2 w-2 rounded-full bg-[#00E599] animate-pulse" />
+                  <h3 className="text-xs font-bold text-white truncate">
+                    Thrill Copilot • K2 Horizon
+                  </h3>
                 </div>
-                <div className="text-[10px] text-[#8F9CAE] truncate max-w-[200px]">
-                  {currentUser.name} ({currentUser.role})
-                </div>
+                <span className="text-[10px] text-[#8F9CAE] block truncate">
+                  Active Role: {currentUser.name} ({currentUser.role})
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={handleExportChat}
-                className="p-1.5 rounded-lg text-[#8F9CAE] hover:text-white hover:bg-[#1E2536] transition-colors cursor-pointer"
-                title="Export Conversation Log (.md)"
-              >
-                <Download className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={handleClearChat}
-                className="p-1.5 rounded-lg text-[#8F9CAE] hover:text-white hover:bg-[#1E2536] transition-colors cursor-pointer"
-                title="Clear Chat History"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={toggleDrawerMode}
-                className="p-1.5 rounded-lg text-[#8F9CAE] hover:text-white hover:bg-[#1E2536] transition-colors cursor-pointer hidden sm:block"
-                title={isDrawerMode ? 'Switch to Floating Window' : 'Expand to Sidecar Drawer'}
-              >
-                {isDrawerMode ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-              </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="px-2 py-0.5 rounded-md bg-[#181E2C] border border-white/[0.07] text-[10px] font-mono text-[#00E599] tabular-nums">
+                Monitoring {context.pipelineSummary.activePipelineCount} Assets
+              </span>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg text-[#8F9CAE] hover:text-white hover:bg-[#1E2536] transition-colors cursor-pointer"
-                title="Close (Cmd+J / Ctrl+J)"
+                aria-label="Close Thrill Copilot"
+                className="p-1.5 rounded-lg bg-[#181E2C] hover:bg-[#1E2536] text-[#8F9CAE] hover:text-white border border-white/[0.07] transition-colors cursor-pointer"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Morning Operational Briefing Banner */}
-          {showBriefingBanner && (
-            <div className="px-3.5 py-2.5 bg-gradient-to-r from-[#181E2C] to-[#121620] border-b border-white/[0.08] flex items-center justify-between gap-2 shrink-0">
-              <div className="flex items-center gap-2 text-xs min-w-0">
-                <Flame className="h-4 w-4 text-[#F5A524] shrink-0" />
-                <span className="text-[11px] text-white truncate">
-                  {context.pipelineSummary.slaRisks > 0 ? (
-                    <strong className="text-[#F5A524]">{context.pipelineSummary.slaRisks} SLA review(s)</strong>
-                  ) : (
-                    <span className="text-[#00E599]">SLA Timers Healthy</span>
-                  )}
-                  {' • '}
-                  {context.pipelineSummary.pendingQASignoffs > 0 ? (
-                    <span className="text-amber-300">{context.pipelineSummary.pendingQASignoffs} QA checks pending</span>
-                  ) : (
-                    <span>QA Cleared</span>
-                  )}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowBriefingBanner(false)}
-                className="text-[10px] text-[#8F9CAE] hover:text-white shrink-0 cursor-pointer"
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
+          {/* Live Context Bar */}
+          <div className="px-4 py-1.5 bg-[#181E2C]/70 border-b border-white/[0.06] flex items-center justify-between text-[10px] font-mono text-[#8F9CAE] tabular-nums">
+            <span>
+              Capacity: <strong className="text-white">{context.pipelineSummary.activePipelineCount}/{context.pipelineSummary.capacityLimit}</strong>
+            </span>
+            <span>
+              SLA Risks: <strong className={context.pipelineSummary.slaRisks > 0 ? 'text-[#F5A524]' : 'text-[#00E599]'}>{context.pipelineSummary.slaRisks}</strong>
+            </span>
+            <span>
+              Needs QA: <strong className="text-white">{context.pipelineSummary.pendingQASignoffs}</strong>
+            </span>
+          </div>
 
-          {/* Chat Stream View */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+          {/* Chat Stream */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-[#0B0E14]">
             {entries.map((entry) => (
               <div
                 key={entry.id}
-                className={`flex flex-col gap-1.5 ${
+                className={`flex flex-col gap-2 ${
                   entry.role === 'user' ? 'items-end' : 'items-start'
                 }`}
               >
                 <div
-                  className={`max-w-[90%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed whitespace-pre-wrap ${
+                  className={`max-w-[90%] rounded-xl px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-line ${
                     entry.role === 'user'
-                      ? 'bg-[#00E599] text-[#0B0E14] font-medium shadow-sm'
-                      : 'bg-[#181E2C] text-white/90 border border-white/[0.07] shadow-md'
+                      ? 'bg-[#00E599] text-[#0B0E14] font-semibold'
+                      : 'bg-[#181E2C] text-[#8F9CAE] border border-white/[0.07]'
                   }`}
                 >
-                  {entry.content}
+                  {entry.content.split(/(\*\*.*?\*\*)/g).map((part, i) =>
+                    part.startsWith('**') && part.endsWith('**') ? (
+                      <strong key={i} className={entry.role === 'user' ? 'font-bold text-[#0B0E14]' : 'font-semibold text-white'}>
+                        {part.slice(2, -2)}
+                      </strong>
+                    ) : (
+                      <span key={i}>{part}</span>
+                    )
+                  )}
                 </div>
 
-                {/* Proposed Tool Calls (Interactive Action Cards) */}
+                {/* Render Human-in-the-Loop Action Proposal Cards if tool_calls exist */}
                 {entry.toolCalls && entry.toolCalls.length > 0 && (
-                  <div className="w-full space-y-2 mt-1">
+                  <div className="w-full space-y-2">
                     {entry.toolCalls.map((tc) => {
-                      const proposal = describeProposal(tc);
                       const state = toolCallStates[tc.id] || 'pending';
+                      const desc = describeProposal(tc);
 
                       return (
                         <div
                           key={tc.id}
-                          className="bg-[#0B0E14] border border-[#00E599]/30 rounded-xl p-3 space-y-2 shadow-lg"
+                          className="w-full rounded-xl bg-[#121620] border border-[#00E599]/40 p-3.5 space-y-2.5 shadow-lg"
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/30">
-                              {proposal.badge}
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#00E599] flex items-center gap-1">
+                              <Zap className="h-3 w-3" />
+                              <span>{desc.badge}</span>
                             </span>
-                            <span className="text-[10px] text-[#8F9CAE] font-mono">
-                              RACI Gated
+                            <span className="text-[10px] font-mono text-[#8F9CAE]">
+                              Human-in-the-Loop
                             </span>
                           </div>
 
-                          <div>
-                            <div className="text-xs font-bold text-white">
-                              {proposal.headline}
+                          <div className="space-y-1">
+                            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <span>{desc.headline}</span>
                             </div>
-                            <div className="text-[11px] text-[#8F9CAE] mt-0.5 leading-normal">
-                              {proposal.subline}
-                            </div>
+                            <p className="text-[11px] text-[#8F9CAE] leading-snug">
+                              {desc.subline}
+                            </p>
                           </div>
 
                           {state === 'pending' && (
@@ -590,7 +389,7 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleConfirmToolCall(tc)}
-                                className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[#00E599] hover:bg-[#00cc88] text-[#0B0E14] flex items-center gap-1 transition-colors cursor-pointer shadow-sm"
+                                className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[#00E599] hover:bg-[#00cc88] text-[#0B0E14] flex items-center gap-1 transition-colors cursor-pointer"
                               >
                                 <Check className="h-3.5 w-3.5 stroke-[2.5]" />
                                 <span>Confirm &amp; Execute</span>
@@ -601,13 +400,13 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
                           {state === 'executed' && (
                             <div className="pt-1.5 border-t border-white/[0.07] flex items-center gap-1.5 text-[11px] font-semibold text-[#00E599]">
                               <Check className="h-3.5 w-3.5" />
-                              <span>Action Executed on Live Board</span>
+                              <span>Executed on Live Kanban Board</span>
                             </div>
                           )}
 
                           {state === 'cancelled' && (
                             <div className="pt-1.5 border-t border-white/[0.07] text-[11px] text-[#8F9CAE] italic">
-                              Action dismissed by operator.
+                              Action cancelled by operator.
                             </div>
                           )}
                         </div>
@@ -625,14 +424,14 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
             {isSending && (
               <div className="flex items-center gap-2 text-xs text-[#00E599] font-mono px-2">
                 <Sparkles className="h-3.5 w-3.5 animate-spin" />
-                <span>Thrill Copilot analyzing live pipeline state...</span>
+                <span>K2 Horizon analyzing live pipeline state...</span>
               </div>
             )}
 
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Prompt Pills */}
+          {/* 4 Conversation Starters (Quick Prompt Pills) */}
           <div className="px-3.5 py-2 bg-[#121620] border-t border-white/[0.07] flex items-center gap-1.5 overflow-x-auto no-scrollbar">
             {quickChips.map((chip) => (
               <button
@@ -647,48 +446,63 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
             ))}
           </div>
 
-          {/* Chat Input Bar */}
+          {/* Chat Input Form */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               handleSend();
             }}
-            className="p-3 bg-[#121620] border-t border-white/[0.08] flex items-center gap-2"
+            className="p-3 bg-[#121620] border-t border-white/[0.07] flex items-center gap-2"
           >
-            {/* Voice Dictation Button */}
-            <button
-              type="button"
-              onClick={toggleSpeechRecognition}
-              className={`p-2 rounded-xl transition-all cursor-pointer ${
-                isListening
-                  ? 'bg-[#FF4B55] text-white animate-pulse'
-                  : 'bg-[#181E2C] text-[#8F9CAE] hover:text-white border border-white/[0.07]'
-              }`}
-              title={isListening ? 'Listening... click to stop' : 'Click to speak command'}
-            >
-              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            </button>
-
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask Copilot (e.g., triage SLA risks, split Hero)..."
-              disabled={isSending}
-              className="flex-1 bg-[#181E2C] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white placeholder-[#8F9CAE] focus:outline-none focus:border-[#00E599]/50 transition-colors"
+              placeholder="Ask Thrill Copilot or issue a board command..."
+              className="flex-1 bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg px-3 py-2 text-xs text-white placeholder-[#8F9CAE] focus:outline-none"
             />
-
             <button
               type="submit"
               disabled={!input.trim() || isSending}
-              className="p-2 rounded-xl bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] disabled:opacity-40 transition-all cursor-pointer shadow-sm"
-              title="Send"
+              aria-label="Send Copilot Command"
+              className="h-9 px-3 rounded-lg bg-[#00E599] hover:bg-[#00cc88] disabled:opacity-40 text-[#0B0E14] font-semibold text-xs flex items-center justify-center transition-colors cursor-pointer"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-3.5 w-3.5" />
             </button>
           </form>
         </div>
       )}
-    </>
+
+      {/* Floating Trigger Bubble (Bottom-Right: 56x56px, bg #121620, crisp hairline border) */}
+      <div className="flex items-center gap-2.5">
+        {!isOpen && (
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#121620] border border-white/10 text-xs text-white shadow-lg hover:border-[#00E599]/40 transition-colors cursor-pointer"
+          >
+            <span className="h-2 w-2 rounded-full bg-[#00E599]" />
+            <span className="font-semibold">Thrill Copilot</span>
+            <span className="text-[10px] text-[#8F9CAE] font-mono">[Ask or Command]</span>
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          aria-label="Toggle Thrill Copilot"
+          className="relative h-14 w-14 rounded-full bg-[#121620] text-[#00E599] border border-[#00E599]/40 hover:border-[#00E599] active:scale-95 transition-colors flex items-center justify-center cursor-pointer shadow-lg"
+        >
+          {isOpen ? <X className="h-5 w-5" /> : <Zap className="h-6 w-6 fill-[#00E599]/20" />}
+
+          {/* Unread / SLA & QA Notification Badge */}
+          {attentionCount > 0 && !isOpen && (
+            <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-[#F5A524] text-[#0B0E14] font-mono text-[10px] font-bold flex items-center justify-center ring-2 ring-[#0B0E14] tabular-nums">
+              {attentionCount}
+            </span>
+          )}
+        </button>
+      </div>
+    </div>
   );
 };

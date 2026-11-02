@@ -1029,12 +1029,6 @@ export default function App() {
         onTriggerMultiplier={handleCopilotTriggerMultiplier}
         onFilterBoard={handleCopilotFilterBoard}
         onDraftBrief={handleCopilotDraftBrief}
-        onBatchTransition={(assetIds, targetStage) => {
-          assetIds.forEach((id) => {
-            const found = assets.find((a) => a.id === id);
-            if (found) handleTransitionAsset(found, targetStage);
-          });
-        }}
       />
 
       {/* Auth Popup Modal */}
