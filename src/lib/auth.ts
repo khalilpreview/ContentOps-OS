@@ -44,11 +44,16 @@ export async function authenticateWithEmail(
   await new Promise((r) => setTimeout(r, 450));
 
   const trimmed = email.trim().toLowerCase();
+  const isSuperAdmin =
+    trimmed === 'previewsites40@gmail.com' ||
+    trimmed === 'elena@thrill.com' ||
+    trimmed === 'admin@thrill.com' ||
+    trimmed === 'superadmin@thrill.com';
   const matchedUser = SEED_USERS.find((u) => u.email.toLowerCase() === trimmed);
 
   let user: User;
   if (matchedUser) {
-    user = matchedUser;
+    user = isSuperAdmin ? { ...matchedUser, role: 'SUPER_ADMIN' } : matchedUser;
   } else {
     // Generate test user for custom email
     const namePart = customName?.trim() || email.split('@')[0].replace(/[._-]/g, ' ');
@@ -61,9 +66,9 @@ export async function authenticateWithEmail(
       id: `u-test-${Date.now()}`,
       name: formattedName,
       email: trimmed,
-      role: preferredRole,
+      role: isSuperAdmin ? 'SUPER_ADMIN' : preferredRole,
       avatarUrl: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80`,
-      department: 'Enterprise Content & Strategy Pod'
+      department: isSuperAdmin ? 'Executive Governance & Administration Pod' : 'Enterprise Content & Strategy Pod'
     };
   }
 
@@ -99,13 +104,20 @@ export async function authenticateWithGoogle(
 ): Promise<AuthSession> {
   await new Promise((r) => setTimeout(r, 600));
 
+  const trimmed = email.trim().toLowerCase();
+  const isSuperAdmin =
+    trimmed === 'previewsites40@gmail.com' ||
+    trimmed === 'elena@thrill.com' ||
+    trimmed === 'admin@thrill.com' ||
+    trimmed === 'superadmin@thrill.com';
+
   const user: User = {
     id: `u-google-${Date.now()}`,
     name,
     email,
-    role: 'CONTENT_MANAGER',
+    role: isSuperAdmin ? 'SUPER_ADMIN' : 'CONTENT_MANAGER',
     avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-    department: 'Global Content & Operations (Google SSO)'
+    department: isSuperAdmin ? 'Executive Governance & Administration Pod' : 'Global Content & Operations (Google SSO)'
   };
 
   const session: AuthSession = {

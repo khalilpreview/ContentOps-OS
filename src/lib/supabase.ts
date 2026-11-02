@@ -109,15 +109,22 @@ export function mapSupabaseUserToUser(
   fallbackRole: UserRole = 'CONTENT_MANAGER'
 ): User {
   const metadata = sbUser.user_metadata || {};
-  const email = sbUser.email || 'operator@thrill.ai';
+  const email = (sbUser.email || 'operator@thrill.ai').trim().toLowerCase();
+  const isDesignatedSuperAdmin =
+    email === 'previewsites40@gmail.com' ||
+    email === 'elena@thrill.com' ||
+    email === 'admin@thrill.com' ||
+    email === 'superadmin@thrill.com';
+
   const name =
     metadata.full_name ||
     metadata.name ||
     email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) ||
     'ContentOps Operator';
 
-  const role: UserRole =
-    metadata.role && ['CONTENT_MANAGER', 'CREATIVE_SPECIALIST', 'STAKEHOLDER', 'DISTRIBUTION_LEAD'].includes(metadata.role)
+  const role: UserRole = isDesignatedSuperAdmin
+    ? 'SUPER_ADMIN'
+    : metadata.role && ['SUPER_ADMIN', 'CONTENT_MANAGER', 'CREATIVE_SPECIALIST', 'STAKEHOLDER', 'DISTRIBUTION_LEAD'].includes(metadata.role)
       ? metadata.role
       : fallbackRole;
 

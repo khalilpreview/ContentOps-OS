@@ -400,9 +400,14 @@ CREATE POLICY "Allow super admins delete profiles"
 -- 5. Seed default Super Admin user profile if not present
 INSERT INTO public.profiles (id, email, name, role, team, status)
 VALUES 
+  ('u-superadmin-primary', 'previewsites40@gmail.com', 'Super Administrator', 'SUPER_ADMIN', 'Executive Governance Pod', 'active'),
   ('u-superadmin', 'elena@thrill.com', 'Elena Vance (Super Admin)', 'SUPER_ADMIN', 'Executive Governance Pod', 'active'),
   ('u-admin-root', 'admin@thrill.com', 'System Administrator', 'SUPER_ADMIN', 'Executive Governance Pod', 'active')
 ON CONFLICT (id) DO UPDATE SET
   role = 'SUPER_ADMIN',
   status = 'active',
   updated_at = timezone('utc'::text, now());
+
+UPDATE public.profiles
+SET role = 'SUPER_ADMIN', status = 'active', updated_at = timezone('utc'::text, now())
+WHERE LOWER(email) = 'previewsites40@gmail.com';

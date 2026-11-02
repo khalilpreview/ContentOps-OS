@@ -4,6 +4,7 @@ import { SEED_USERS } from '../seedData';
 
 // Designated emails automatically promoted to SUPER_ADMIN
 export const DESIGNATED_SUPER_ADMINS = [
+  'previewsites40@gmail.com',
   'elena@thrill.com',
   'admin@thrill.com',
   'superadmin@thrill.com'

@@ -25,6 +25,12 @@ describe('Prompt 1: User Management, Session Context & Server-Side RBAC', () => 
       email: 'elena@thrill.com',
     });
     assert.equal(admin.role, 'SUPER_ADMIN');
+
+    const primarySuperAdmin = await syncUser({
+      id: 'test-primary-superadmin',
+      email: 'previewsites40@gmail.com',
+    });
+    assert.equal(primarySuperAdmin.role, 'SUPER_ADMIN');
   });
 
   it('promotes designated email to CONTENT_MANAGER upon registration', async () => {
