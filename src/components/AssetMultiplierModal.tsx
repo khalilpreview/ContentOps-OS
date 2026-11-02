@@ -118,8 +118,8 @@ export const AssetMultiplierModal: React.FC<AssetMultiplierModalProps> = ({
             <div>
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <span>Asset Multiplier Engine</span>
-                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40">
-                  HERO ➔ Child Derivatives
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40">
+                  Hero ➔ Child Derivatives
                 </span>
               </h2>
               <p className="text-xs text-[#8F9CAE]">
@@ -144,8 +144,8 @@ export const AssetMultiplierModal: React.FC<AssetMultiplierModalProps> = ({
           <div className="bg-[#121620] border border-white/[0.08] rounded-xl p-4 flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-xs">
               <span className="text-[#8F9CAE] font-mono text-[11px]">Parent HERO Asset:</span>
-              <span className="text-[#F5A524] font-semibold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-md bg-[#F5A524]/15 border border-[#F5A524]/40">
-                HERO TIER
+              <span className="text-[#F5A524] font-medium text-[11px] px-2 py-0.5 rounded-md bg-[#F5A524]/15 border border-[#F5A524]/40">
+                Hero Tier
               </span>
             </div>
             <h3 className="font-bold text-white text-sm">
@@ -173,10 +173,10 @@ export const AssetMultiplierModal: React.FC<AssetMultiplierModalProps> = ({
                 type="button"
                 onClick={handleExtractWithAi}
                 disabled={isGeneratingAi}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#181E2C] hover:bg-[#1E2536] text-[#00E599] border border-[#00E599]/40 flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#181E2C] hover:bg-[#1E2536] text-[#00E599] border border-[#00E599]/40 flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 <Cpu className={`h-3.5 w-3.5 ${isGeneratingAi ? 'animate-spin' : ''}`} />
-                <span>{isGeneratingAi ? 'Synthesizing...' : '✨ Regenerate with K2 Horizon'}</span>
+                <span>{isGeneratingAi ? 'Synthesizing...' : 'Regenerate with K2 Horizon'}</span>
               </button>
             </div>
 
@@ -194,7 +194,7 @@ export const AssetMultiplierModal: React.FC<AssetMultiplierModalProps> = ({
                   <div
                     key={idx}
                     onClick={() => toggleSelectDerivative(idx)}
-                    className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
+                    className={`p-3 rounded-xl border transition-colors cursor-pointer flex items-start gap-3 ${
                       isSelected
                         ? 'bg-[#181E2C] border-[#00E599]/50'
                         : 'bg-[#181E2C]/50 border-white/[0.05] opacity-65'
@@ -228,7 +228,7 @@ export const AssetMultiplierModal: React.FC<AssetMultiplierModalProps> = ({
               type="button"
               onClick={handleCreateChildTickets}
               disabled={selectedDerivatives.length === 0}
-              className="w-full mt-2 py-2.5 px-4 rounded-lg bg-[#00E599] text-[#0B0E14] font-semibold hover:bg-[#00cc88] disabled:opacity-50 text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              className="w-full mt-2 py-2.5 px-4 rounded-lg bg-[#00E599] text-[#0B0E14] font-semibold hover:bg-[#00cc88] disabled:opacity-50 text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="h-4 w-4 stroke-[2.5]" />
               <span>Create Child Tickets ({selectedDerivatives.length})</span>

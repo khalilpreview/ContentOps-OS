@@ -322,7 +322,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-[#8F9CAE] uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Asset Title
               </label>
               <input
@@ -397,12 +397,12 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
                   type="button"
                   onClick={handleAutoBrief}
                   disabled={isGeneratingBrief}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] transition-all disabled:opacity-50 cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] transition-colors disabled:opacity-50 cursor-pointer"
                   aria-label="Generate with K2 Horizon"
                 >
                   <Sparkles className={`h-3.5 w-3.5 ${isGeneratingBrief ? 'animate-spin' : ''}`} />
                   <span>
-                    {isGeneratingBrief ? 'Generating with K2 Horizon...' : '✨ Generate with K2 Horizon'}
+                    {isGeneratingBrief ? 'Generating with K2 Horizon...' : 'Generate with K2 Horizon'}
                   </span>
                 </button>
               </div>
@@ -425,7 +425,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
 
             {/* 3 Hook Variants (Contrarian, Curiosity, Direct Value) */}
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-[#8F9CAE] uppercase tracking-wider">
+              <label className="block text-xs font-medium text-slate-300">
                 Hook Strategy & 3 Opening Variants (First 3s)
               </label>
 
@@ -482,7 +482,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
 
             {/* Platform Technical Specifications */}
             <div>
-              <label className="block text-xs font-semibold text-[#8F9CAE] uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Platform Technical Specifications
               </label>
               <textarea
@@ -496,7 +496,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
 
             {/* Target KPI Benchmark */}
             <div>
-              <label className="block text-xs font-semibold text-[#8F9CAE] uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
                 Target KPI Benchmark
               </label>
               <input
@@ -519,7 +519,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-[#00E599]" />
                   <div>
-                    <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                    <h3 className="text-xs font-semibold text-white">
                       Brand Guardianship Sign-Off
                     </h3>
                     <span className="text-[10px] text-[#8F9CAE] block">
@@ -630,7 +630,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
             {/* Stage Transition Controls */}
             <div className="bg-[#181E2C] border border-white/[0.07] rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#8F9CAE] uppercase tracking-wider">
+                <span className="text-xs font-medium text-slate-300">
                   Pipeline Progression
                 </span>
                 <span className="text-xs font-bold text-[#00E599]">
@@ -647,7 +647,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
                       onUpdateAsset(updated);
                       onAttemptTransition(updated, 'SLA_REVIEW');
                     }}
-                    className="w-full py-2 px-3 rounded-lg bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    className="w-full py-2 px-3 rounded-lg bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <span>Submit Brief to Stakeholder Review (SLA)</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -660,14 +660,14 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
                       type="button"
                       onClick={() => onAttemptTransition(buildUpdatedAsset(), 'IN_PRODUCTION')}
                       disabled={!isCanReviewSla}
-                      className="w-full py-2 px-3 rounded-lg bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] disabled:opacity-40 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      className="w-full py-2 px-3 rounded-lg bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] disabled:opacity-40 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <CheckCircle2 className="h-4 w-4" />
                       <span>Sign-Off SLA &amp; Advance to Production</span>
                     </button>
                     {!isCanReviewSla && (
                       <p className="text-[11px] text-[#F5A524] text-center">
-                        Only Stakeholder or Content Manager can sign off SLA review.
+                         Only Stakeholder or Content Manager can sign off SLA review.
                       </p>
                     )}
                   </div>
@@ -681,7 +681,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
                       onUpdateAsset(updated);
                       onAttemptTransition(updated, 'QA_GATE');
                     }}
-                    className="w-full py-2 px-3 rounded-lg bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    className="w-full py-2 px-3 rounded-lg bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <span>Send Deliverable to QA Gatekeeper</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -692,7 +692,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
                   <button
                     type="button"
                     onClick={() => onAttemptTransition(buildUpdatedAsset(), 'PUBLISHED')}
-                    className="w-full py-2 px-3 rounded-lg bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    className="w-full py-2 px-3 rounded-lg bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <CheckCircle2 className="h-4 w-4" />
                     <span>Publish &amp; Move to Syndication Archive</span>
@@ -706,7 +706,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
               asset.status === 'SLA_REVIEW' ? slaInfo.badgeClass : 'bg-[#181E2C] border-white/[0.07]'
             }`}>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                <span className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5" />
                   <span>SLA Turnaround Clock</span>
                 </span>
@@ -729,7 +729,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
             {/* Assignee & Deliverable URL */}
             <div className="bg-[#181E2C] border border-white/[0.07] rounded-xl p-4 space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-[#8F9CAE] uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
                   Assigned Specialist (RACI)
                 </label>
                 <select
@@ -748,7 +748,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-semibold text-[#8F9CAE] uppercase tracking-wider">
+                  <label className="text-xs font-medium text-slate-300">
                     Deliverable Attachment URL
                   </label>
                   {deliverableUrl && (
@@ -776,12 +776,12 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
             {/* Phase 5: Post-Launch Syndication Metrics & Winning Format */}
             <div className="bg-[#181E2C] border border-white/[0.07] rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white uppercase tracking-wider">
+                <span className="text-xs font-semibold text-white">
                   Post-Launch Performance Loop
                 </span>
                 {isWinningFormat && (
-                  <span className="px-2 py-0.5 rounded-md bg-[#F5A524]/15 text-[#F5A524] border border-[#F5A524]/40 font-bold text-[10px]">
-                    🏆 WINNING FORMAT
+                  <span className="px-2 py-0.5 rounded-md bg-[#F5A524]/15 text-[#F5A524] border border-[#F5A524]/40 font-semibold text-[10px]">
+                    🏆 Winning Format
                   </span>
                 )}
               </div>
@@ -826,7 +826,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
                     onUpdateAsset(buildUpdatedAsset({ sentToPaidAds: true }));
                   }}
                   disabled={sentToPaidAds}
-                  className={`w-full py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`w-full py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                     sentToPaidAds
                       ? 'bg-[#00E599]/20 text-[#00E599] border border-[#00E599]/40'
                       : 'bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88]'

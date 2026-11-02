@@ -154,7 +154,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
           {SHORTCUT_CATEGORIES.map((category) => (
             <div key={category.title} className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#00E599]">
+                <h3 className="text-xs font-semibold text-[#00E599]">
                   {category.title}
                 </h3>
                 <div className="h-px flex-1 bg-white/[0.06] ml-3" />

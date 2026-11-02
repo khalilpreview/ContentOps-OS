@@ -133,7 +133,7 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto max-h-[80vh] bg-[#0B0E14]">
           <div>
-            <label className="block text-xs font-semibold text-[#8F9CAE] uppercase tracking-wider mb-1">
+            <label className="block text-xs font-medium text-slate-300 mb-1">
               Asset Title *
             </label>
             <input
@@ -208,10 +208,10 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
                 type="button"
                 onClick={handleAiAutoFill}
                 disabled={isGenerating}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] transition-all disabled:opacity-50 cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[#00E599] text-[#0B0E14] hover:bg-[#00cc88] transition-colors disabled:opacity-50 cursor-pointer"
               >
                 <Sparkles className={`h-3 w-3 ${isGenerating ? 'animate-spin' : ''}`} />
-                <span>{isGenerating ? 'Generating...' : '✨ Generate with K2 Horizon'}</span>
+                <span>{isGenerating ? 'Generating...' : 'Generate with K2 Horizon'}</span>
               </button>
             </div>
             <textarea

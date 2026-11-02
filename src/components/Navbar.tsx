@@ -121,7 +121,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="hidden lg:flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#181E2C] hover:bg-[#202738] border border-white/[0.07] hover:border-[#00E599]/30 text-[11px] font-mono transition-colors cursor-pointer"
               title="Configure Supabase Database & Auth"
             >
-              <span className={`h-1.5 w-1.5 rounded-full ${supabaseConfigured ? 'bg-[#00E599] shadow-sm shadow-[#00E599]/50' : 'bg-[#F5A524]'}`} />
+              <span className={`h-1.5 w-1.5 rounded-full ${supabaseConfigured ? 'bg-[#00E599]' : 'bg-[#F5A524]'}`} />
               <span className={supabaseConfigured ? 'text-[#00E599]' : 'text-[#F5A524]'}>
                 {supabaseConfigured ? 'Supabase DB & Auth' : 'Supabase Config'}
               </span>
@@ -147,7 +147,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {breachedCount > 0 && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FF4B55]/15 border border-[#FF4B55]/40 text-[#FF4B55] text-xs font-semibold animate-pulse tabular-nums">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FF4B55]/15 border border-[#FF4B55]/40 text-[#FF4B55] text-xs font-semibold tabular-nums">
               <Clock className="h-3.5 w-3.5 text-[#FF4B55]" />
               <span>{breachedCount} SLA Breached</span>
             </div>
@@ -284,7 +284,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onOpenAuthModal && (
               <button
                 onClick={onOpenAuthModal}
-                className="px-3 py-1.5 rounded-lg bg-[#00E599] hover:bg-[#00c985] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-[#00E599]/20 cursor-pointer"
+                className="px-3 py-1.5 rounded-lg bg-[#00E599] hover:bg-[#00c985] text-black font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                 title="Sign in with Supabase"
               >
                 <LogIn className="h-3.5 w-3.5" />

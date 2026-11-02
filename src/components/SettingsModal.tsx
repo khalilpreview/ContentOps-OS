@@ -329,7 +329,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       // Fallback image on broken URL
                       (e.target as HTMLImageElement).src = AVATAR_PRESETS[0].url;
                     }}
-                    className="h-20 w-20 rounded-full object-cover ring-2 ring-[#00E599] shadow-lg shadow-[#00E599]/20"
+                    className="h-20 w-20 rounded-full object-cover ring-2 ring-[#00E599]"
                   />
                   <div className="absolute -bottom-1 -right-1 p-1 bg-[#181E2C] rounded-full border border-white/20">
                     <Shield className="h-3.5 w-3.5 text-[#00E599]" />
@@ -428,9 +428,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       key={def.role}
                       type="button"
                       onClick={() => setRole(def.role)}
-                      className={`p-3 rounded-xl text-left border transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                      className={`p-3 rounded-xl text-left border transition-colors cursor-pointer flex flex-col justify-between gap-1.5 ${
                         isSelected
-                          ? 'bg-[#00E599]/10 border-[#00E599] shadow-sm shadow-[#00E599]/20'
+                          ? 'bg-[#00E599]/10 border-[#00E599]'
                           : 'bg-[#181E2C] border-white/[0.07] hover:border-white/20 hover:bg-[#1E2536]'
                       }`}
                     >
@@ -508,7 +508,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <button
                   type="submit"
                   disabled={isSyncing}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#00E599] hover:bg-[#00cc88] disabled:opacity-50 text-[#0B0E14] flex items-center gap-1.5 transition-all shadow-md shadow-[#00E599]/20 cursor-pointer font-medium"
+                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#00E599] hover:bg-[#00cc88] disabled:opacity-50 text-[#0B0E14] flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   {isSyncing ? (
                     <>

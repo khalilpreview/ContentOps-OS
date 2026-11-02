@@ -174,9 +174,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   key={days}
                   type="button"
                   onClick={() => setTimeframeDays(days)}
-                  className={`px-3 py-1 rounded-lg font-mono font-medium transition-all ${
+                  className={`px-3 py-1 rounded-lg font-mono font-medium transition-colors ${
                     timeframeDays === days
-                      ? 'bg-[#00E599] text-black font-bold shadow-sm shadow-[#00E599]/30'
+                      ? 'bg-[#00E599] text-black font-semibold'
                       : 'text-[#8F9CAE] hover:text-white'
                   }`}
                 >
@@ -215,7 +215,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <button
               type="button"
               onClick={onNavigateToKanban}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#181E2C] hover:bg-[#202738] text-white border border-white/10 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#181E2C] hover:bg-[#202738] text-white border border-white/10 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
               <LayoutGrid className="w-3.5 h-3.5 text-[#00E599]" />
               <span>Back to Kanban</span>
@@ -245,7 +245,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <button
                 type="button"
                 onClick={onOpenNewAsset}
-                className="px-4 py-2 rounded-xl bg-[#00E599] hover:bg-[#00c985] text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-[#00E599]/20 shrink-0 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[#00E599] hover:bg-[#00c985] text-black font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
               >
                 <span>+ Create First Brief</span>
               </button>
@@ -259,18 +259,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           
           {/* 1. Throughput */}
-          <div className="bg-[#121620] border border-white/[0.07] rounded-2xl p-4 flex flex-col justify-between hover:border-[#00E599]/30 transition-all group">
+          <div className="bg-[#121620] border border-white/[0.07] rounded-2xl p-4 flex flex-col justify-between hover:border-[#00E599]/30 transition-colors group">
             <div className="flex items-center justify-between text-[#8F9CAE]">
-              <span className="text-xs font-mono uppercase tracking-wide">30d Output Throughput</span>
+              <span className="text-xs font-medium text-slate-300">30d Output Throughput</span>
               <div className="w-8 h-8 rounded-lg bg-[#00E599]/10 border border-[#00E599]/20 flex items-center justify-center text-[#00E599]">
                 <Layers className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-2">
-              <div className="text-2xl font-bold font-mono text-white group-hover:text-[#00E599] transition-colors">
+              <div className="text-2xl font-bold font-mono text-white group-hover:text-[#00E599] transition-colors tabular-nums">
                 {summaryStats.totalAssetsProcessed}
               </div>
-              <div className="flex items-center gap-1 mt-1 text-[11px] text-[#00E599] font-mono">
+              <div className="flex items-center gap-1 mt-1 text-[11px] text-[#00E599] font-mono tabular-nums">
                 <ArrowUpRight className="w-3.5 h-3.5" />
                 <span>+{summaryStats.totalAssetsChangePct}% vs prior period</span>
               </div>
@@ -278,18 +278,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* 2. Content Velocity */}
-          <div className="bg-[#121620] border border-white/[0.07] rounded-2xl p-4 flex flex-col justify-between hover:border-[#00E599]/30 transition-all group">
+          <div className="bg-[#121620] border border-white/[0.07] rounded-2xl p-4 flex flex-col justify-between hover:border-[#00E599]/30 transition-colors group">
             <div className="flex items-center justify-between text-[#8F9CAE]">
-              <span className="text-xs font-mono uppercase tracking-wide">Content Velocity Rate</span>
+              <span className="text-xs font-medium text-slate-300">Content Velocity Rate</span>
               <div className="w-8 h-8 rounded-lg bg-[#00E599]/10 border border-[#00E599]/20 flex items-center justify-center text-[#00E599]">
                 <Zap className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-2">
-              <div className="text-2xl font-bold font-mono text-white group-hover:text-[#00E599] transition-colors">
+              <div className="text-2xl font-bold font-mono text-white group-hover:text-[#00E599] transition-colors tabular-nums">
                 {summaryStats.velocityOutputPerDay} <span className="text-sm font-normal text-[#8F9CAE]">assets/day</span>
               </div>
-              <div className="flex items-center gap-1 mt-1 text-[11px] text-[#00E599] font-mono">
+              <div className="flex items-center gap-1 mt-1 text-[11px] text-[#00E599] font-mono tabular-nums">
                 <ArrowUpRight className="w-3.5 h-3.5" />
                 <span>+{summaryStats.velocityChangePct}% velocity pace</span>
               </div>
@@ -297,15 +297,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* 3. SLA Compliance */}
-          <div className="bg-[#121620] border border-white/[0.07] rounded-2xl p-4 flex flex-col justify-between hover:border-[#00E599]/30 transition-all group">
+          <div className="bg-[#121620] border border-white/[0.07] rounded-2xl p-4 flex flex-col justify-between hover:border-[#00E599]/30 transition-colors group">
             <div className="flex items-center justify-between text-[#8F9CAE]">
-              <span className="text-xs font-mono uppercase tracking-wide">SLA On-Time Rate</span>
+              <span className="text-xs font-medium text-slate-300">SLA On-Time Rate</span>
               <div className="w-8 h-8 rounded-lg bg-[#00E599]/10 border border-[#00E599]/20 flex items-center justify-center text-[#00E599]">
                 <ShieldCheck className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-2">
-              <div className="text-2xl font-bold font-mono text-white group-hover:text-[#00E599] transition-colors">
+              <div className="text-2xl font-bold font-mono text-white group-hover:text-[#00E599] transition-colors tabular-nums">
                 {summaryStats.slaComplianceRate}%
               </div>
               <div className="flex items-center gap-1 mt-1 text-[11px] text-[#00E599] font-mono">
@@ -316,27 +316,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* 4. Average SLA Turnaround */}
-          <div className="bg-[#121620] border border-white/[0.07] rounded-2xl p-4 flex flex-col justify-between hover:border-[#F5A524]/30 transition-all group">
+          <div className="bg-[#121620] border border-white/[0.07] rounded-2xl p-4 flex flex-col justify-between hover:border-[#F5A524]/30 transition-colors group">
             <div className="flex items-center justify-between text-[#8F9CAE]">
-              <span className="text-xs font-mono uppercase tracking-wide">Avg Turnaround Latency</span>
+              <span className="text-xs font-medium text-slate-300">Avg Turnaround Latency</span>
               <div className="w-8 h-8 rounded-lg bg-[#F5A524]/10 border border-[#F5A524]/20 flex items-center justify-center text-[#F5A524]">
                 <Clock className="w-4 h-4" />
               </div>
             </div>
             <div className="mt-2">
-              <div className="text-2xl font-bold font-mono text-white group-hover:text-[#F5A524] transition-colors">
+              <div className="text-2xl font-bold font-mono text-white group-hover:text-[#F5A524] transition-colors tabular-nums">
                 {summaryStats.avgTurnaroundHours}h
               </div>
-              <div className="flex items-center gap-1 mt-1 text-[11px] text-[#00E599] font-mono">
+              <div className="flex items-center gap-1 mt-1 text-[11px] text-[#00E599] font-mono tabular-nums">
                 <span>{summaryStats.avgHoursAheadOfSla}h ahead of 48h limit</span>
               </div>
             </div>
           </div>
 
           {/* 5. Phase 5 Retention Win Rate */}
-          <div className="bg-[#121620] border border-white/[0.07] rounded-2xl p-4 flex flex-col justify-between hover:border-[#00E599]/30 transition-all group">
+          <div className="bg-[#121620] border border-white/[0.07] rounded-2xl p-4 flex flex-col justify-between hover:border-[#00E599]/30 transition-colors group">
             <div className="flex items-center justify-between text-[#8F9CAE]">
-              <span className="text-xs font-mono uppercase tracking-wide">Winning Format Ratio</span>
+              <span className="text-xs font-medium text-slate-300">Winning Format Ratio</span>
               <div className="w-8 h-8 rounded-lg bg-[#00E599]/10 border border-[#00E599]/20 flex items-center justify-center text-[#00E599]">
                 <Award className="w-4 h-4" />
               </div>

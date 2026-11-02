@@ -31,18 +31,18 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   const slaInfo = calculateSla(asset);
   const assignee = allUsers.find((u) => u.id === asset.assignedToId);
 
-  // Compact uppercase Format Tier pill ('text-[11px] px-2 py-0.5 rounded-md font-semibold')
+  // Compact Format Tier pill
   const formatBadges: Record<FormatTier, { label: string; class: string }> = {
     HERO: {
-      label: 'HERO',
+      label: 'Hero',
       class: 'bg-[#F5A524]/15 text-[#F5A524] border border-[#F5A524]/40'
     },
     HUB: {
-      label: 'HUB',
+      label: 'Hub',
       class: 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40'
     },
     HYGIENE: {
-      label: 'HYGIENE',
+      label: 'Hygiene',
       class: 'bg-white/10 text-[#8F9CAE] border border-white/10'
     }
   };
@@ -64,23 +64,23 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
       draggable
       onDragStart={(e) => onDragStart?.(e, asset)}
       onClick={() => onOpenDetail(asset)}
-      className="group relative bg-[#181E2C] hover:bg-[#1E2536] border border-white/[0.07] hover:border-[#00E599]/40 rounded-xl p-3.5 shadow-sm transition-all cursor-pointer flex flex-col gap-2.5 text-white focus-within:ring-1 focus-within:ring-[#00E599]/50"
+      className="group relative bg-[#181E2C] hover:bg-[#1E2536] border border-white/[0.07] hover:border-[#00E599]/40 rounded-xl p-3.5 shadow-sm transition-colors cursor-pointer flex flex-col gap-2.5 text-white focus-within:ring-1 focus-within:ring-[#00E599]/50"
     >
       {/* Top row: Format Tier Badge + Priority (only if HIGH or URGENT) */}
       <div className="flex items-center justify-between gap-2">
-        <span className={`text-[11px] px-2 py-0.5 rounded-md font-semibold uppercase tracking-wide ${formatBadges[asset.formatTier].class}`}>
+        <span className={`text-[11px] px-2 py-0.5 rounded-md font-medium ${formatBadges[asset.formatTier].class}`}>
           {formatBadges[asset.formatTier].label}
         </span>
 
         {showPriority && (
           <span
-            className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border uppercase tracking-wide ${
+            className={`text-[10px] font-mono font-medium px-2 py-0.5 rounded-md border ${
               asset.priority === 'URGENT'
                 ? 'bg-[#FF4B55]/15 text-[#FF4B55] border-[#FF4B55]/40'
                 : 'bg-[#F5A524]/15 text-[#F5A524] border-[#F5A524]/40'
             }`}
           >
-            {asset.priority}
+            {asset.priority === 'URGENT' ? 'Urgent' : 'High'}
           </span>
         )}
       </div>

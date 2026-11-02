@@ -473,15 +473,15 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
         </div>
       )}
 
-      {/* Floating Trigger Bubble (Bottom-Right: 56x56px, bg #121620, border rgba(0,229,153,0.4), text #00E599) */}
+      {/* Floating Trigger Bubble (Bottom-Right: 56x56px, bg #121620, crisp hairline border) */}
       <div className="flex items-center gap-2.5">
         {!isOpen && (
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#121620]/95 border border-[#00E599]/30 text-xs text-white shadow-xl hover:border-[#00E599]/60 transition-all cursor-pointer"
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#121620] border border-white/10 text-xs text-white shadow-lg hover:border-[#00E599]/40 transition-colors cursor-pointer"
           >
-            <span className="h-2 w-2 rounded-full bg-[#00E599] animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-[#00E599]" />
             <span className="font-semibold">Thrill Copilot</span>
             <span className="text-[10px] text-[#8F9CAE] font-mono">[Ask or Command]</span>
           </button>
@@ -491,8 +491,7 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
           aria-label="Toggle Thrill Copilot"
-          style={{ border: '1px solid rgba(0, 229, 153, 0.4)' }}
-          className="relative h-14 w-14 rounded-full bg-[#121620] text-[#00E599] shadow-[0_0_25px_rgba(0,229,153,0.28)] hover:shadow-[0_0_32px_rgba(0,229,153,0.45)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
+          className="relative h-14 w-14 rounded-full bg-[#121620] text-[#00E599] border border-[#00E599]/40 hover:border-[#00E599] active:scale-95 transition-colors flex items-center justify-center cursor-pointer shadow-lg"
         >
           {isOpen ? <X className="h-5 w-5" /> : <Zap className="h-6 w-6 fill-[#00E599]/20" />}
 

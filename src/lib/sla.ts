@@ -56,7 +56,7 @@ export function calculateSla(asset: ContentAsset, now: Date = new Date()): SlaCa
       hoursRemaining: remainingHours,
       minutesRemaining: remainingMinutes,
       label: `SLA BREACHED: ${breachedHours}h`,
-      badgeClass: 'bg-[#FF4B55]/15 text-[#FF4B55] border-[#FF4B55]/50 animate-pulse ring-1 ring-[#FF4B55]/30',
+      badgeClass: 'bg-[#FF4B55]/15 text-[#FF4B55] border-[#FF4B55]/50',
       textClass: 'text-[#FF4B55] font-semibold',
       isBreached: true,
       percentageRemaining: 0

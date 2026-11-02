@@ -202,14 +202,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={toggleCollapse}
-            className="h-9 w-9 rounded-lg flex items-center justify-center bg-[#181E2C] border border-white/[0.07] text-[#8F9CAE] hover:text-white hover:border-[#00E599]/40 hover:bg-[#1E2536] transition-all cursor-pointer group relative"
+            className="h-9 w-9 rounded-lg flex items-center justify-center bg-[#181E2C] border border-white/[0.07] text-[#8F9CAE] hover:text-white hover:border-[#00E599]/40 hover:bg-[#1E2536] transition-colors cursor-pointer group relative"
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isCollapsed ? (
-              <PanelLeftOpen className="h-4 w-4 transition-transform group-hover:scale-110 text-[#00E599]" />
+              <PanelLeftOpen className="h-4 w-4 text-[#00E599]" />
             ) : (
-              <PanelLeftClose className="h-4 w-4 transition-transform group-hover:scale-110" />
+              <PanelLeftClose className="h-4 w-4" />
             )}
 
             {isCollapsed && (
@@ -224,7 +224,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="space-y-1.5">
           {!isCollapsed && (
             <div className="flex items-center justify-between px-2.5 py-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#8F9CAE]">
+              <span className="text-xs font-medium text-slate-400">
                 Operations
               </span>
               <span className="text-[10px] text-[#8F9CAE] font-mono tabular-nums">
@@ -244,7 +244,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       type="button"
                       onClick={item.onClick}
-                      className={`h-10 w-10 rounded-lg flex items-center justify-center transition-all cursor-pointer relative ${
+                      className={`h-10 w-10 rounded-lg flex items-center justify-center transition-colors cursor-pointer relative ${
                         isActive
                           ? 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40'
                           : 'text-[#8F9CAE] hover:text-white hover:bg-[#181E2C]'
@@ -256,7 +256,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       )}
                     </button>
 
-                    <div className="absolute left-full ml-2.5 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-[#181E2C] border border-white/10 rounded-lg shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50 flex items-center gap-2 whitespace-nowrap">
+                    <div className="absolute left-full ml-2.5 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-[#181E2C] border border-white/10 rounded-lg shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 z-50 flex items-center gap-2 whitespace-nowrap">
                       <span className="text-xs font-semibold text-white">{item.label}</span>
                       {typeof item.count === 'number' && (
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#0B0E14] text-white tabular-nums">
@@ -273,7 +273,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   key={item.id}
                   type="button"
                   onClick={item.onClick}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer relative ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer relative ${
                     isActive
                       ? 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40 font-semibold'
                       : 'text-[#8F9CAE] hover:text-white hover:bg-[#181E2C] border border-transparent'
@@ -308,7 +308,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() =>
                     onChangeQuickFilter(quickFilter === 'NEEDS_MY_SIGNOFF' ? 'NONE' : 'NEEDS_MY_SIGNOFF')
                   }
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                     quickFilter === 'NEEDS_MY_SIGNOFF'
                       ? 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40 font-semibold'
                       : 'bg-[#181E2C]/60 text-[#8F9CAE] hover:text-white hover:bg-[#181E2C] border border-white/5'
@@ -327,7 +327,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() =>
                     onChangeQuickFilter(quickFilter === 'SLA_RISK' ? 'NONE' : 'SLA_RISK')
                   }
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                     quickFilter === 'SLA_RISK'
                       ? 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40 font-semibold'
                       : 'bg-[#181E2C]/60 text-[#8F9CAE] hover:text-white hover:bg-[#181E2C] border border-white/5'
@@ -353,7 +353,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onChangeQuickFilter(quickFilter === 'NEEDS_MY_SIGNOFF' ? 'NONE' : 'NEEDS_MY_SIGNOFF')
                   }
                   title="⚡ Needs My Sign-off"
-                  className={`h-10 w-10 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                  className={`h-10 w-10 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
                     quickFilter === 'NEEDS_MY_SIGNOFF'
                       ? 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40'
                       : 'text-[#8F9CAE] hover:text-white hover:bg-[#181E2C]'
@@ -367,7 +367,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onChangeQuickFilter(quickFilter === 'SLA_RISK' ? 'NONE' : 'SLA_RISK')
                   }
                   title="⚠️ SLA Risk"
-                  className={`h-10 w-10 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                  className={`h-10 w-10 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
                     quickFilter === 'SLA_RISK'
                       ? 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40'
                       : 'text-[#F5A524] hover:text-white hover:bg-[#181E2C]'
@@ -385,7 +385,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!isCollapsed ? (
             <div className="pt-3 border-t border-white/[0.07] space-y-2">
               <div className="flex items-center justify-between px-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#8F9CAE]">
+                <span className="text-xs font-medium text-slate-400">
                   Governance: Approval Lock Active
                 </span>
                 <span className="h-1.5 w-1.5 rounded-full bg-[#00E599]" />
@@ -406,7 +406,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span className="text-[#8F9CAE]">QA Gate VETO Breaches:</span>
                   <span className={`font-mono font-bold px-1.5 py-0.5 rounded text-[10px] tabular-nums ${
                     breachedCount > 0
-                      ? 'bg-[#FF4B55]/15 text-[#FF4B55] border border-[#FF4B55]/40 animate-pulse'
+                      ? 'bg-[#FF4B55]/15 text-[#FF4B55] border border-[#FF4B55]/40'
                       : 'bg-[#00E599]/15 text-[#00E599]'
                   }`}>
                     {breachedCount} {breachedCount === 1 ? 'breach' : 'breaches'}

@@ -47,6 +47,31 @@ export async function generateBrief(
   platform: string,
   customConfig?: Partial<AiConfig>
 ): Promise<{ result: BriefGenerationResult; engineUsed: string }> {
+  // 1. Try server-side endpoint first (secure, no client key leakage)
+  try {
+    const res = await fetch('/api/ai/copilot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'generate_brief',
+        rawNotes,
+        formatTier,
+        platform
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.result?.hooks) {
+        return {
+          result: data.result,
+          engineUsed: data.engineUsed || 'IFM.ai K2 Horizon (Server)'
+        };
+      }
+    }
+  } catch {
+    // Fall back to direct or offline generator
+  }
+
   const config = { ...getStoredAiConfig(), ...customConfig };
 
   if (config.apiKey && config.apiKey.trim() !== '') {
@@ -144,6 +169,29 @@ export async function generateDerivatives(
   macroDescription: string,
   customConfig?: Partial<AiConfig>
 ): Promise<{ derivatives: DerivativeIdea[]; engineUsed: string }> {
+  // 1. Try server-side endpoint first (secure, no client key leakage)
+  try {
+    const res = await fetch('/api/ai/copilot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'generate_derivatives',
+        macroDescription
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data?.derivatives)) {
+        return {
+          derivatives: data.derivatives,
+          engineUsed: data.engineUsed || 'IFM.ai K2 Horizon (Server)'
+        };
+      }
+    }
+  } catch {
+    // Fall back to direct or offline generator
+  }
+
   const config = { ...getStoredAiConfig(), ...customConfig };
 
   if (config.apiKey && config.apiKey.trim() !== '') {

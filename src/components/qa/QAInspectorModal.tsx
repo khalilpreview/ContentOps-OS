@@ -633,9 +633,9 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowSafeZones(!showSafeZones)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
                     showSafeZones
-                      ? 'bg-[#00E599]/20 text-[#00E599] border-[#00E599]/50 shadow-sm shadow-[#00E599]/20'
+                      ? 'bg-[#00E599]/20 text-[#00E599] border-[#00E599]/50'
                       : 'bg-white/5 text-[#8F9CAE] hover:text-white border-white/10'
                   }`}
                   title="Toggle TikTok & Instagram safe margins guide"
@@ -661,7 +661,7 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsRevisionDrawerOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF4B55]/15 hover:bg-[#FF4B55]/25 text-[#FF4B55] border border-[#FF4B55]/40 rounded-lg text-xs font-semibold transition-all shadow-sm"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF4B55]/15 hover:bg-[#FF4B55]/25 text-[#FF4B55] border border-[#FF4B55]/40 rounded-lg text-xs font-semibold transition-colors shadow-sm"
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
                   <span>Request Revision</span>
@@ -703,7 +703,7 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
                     <button
                       type="button"
                       onClick={togglePlay}
-                      className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-black/60 hover:bg-[#00E599]/90 text-white hover:text-black border border-white/20 flex items-center justify-center transition-all transform hover:scale-110 shadow-2xl z-20 backdrop-blur-sm"
+                      className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-black/60 hover:bg-[#00E599]/90 text-white hover:text-black border border-white/20 flex items-center justify-center transition-colors shadow-lg z-20 backdrop-blur-sm"
                       aria-label="Play video"
                     >
                       <Play className="w-8 h-8 ml-1 fill-current" />
@@ -1069,7 +1069,7 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
                     type="button"
                     disabled={!feedbackNote.trim()}
                     onClick={handleSubmitRevision}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-[#FF4B55] hover:bg-[#e03d47] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs rounded-lg transition-all shadow-md shadow-[#FF4B55]/20"
+                    className="flex items-center gap-1.5 px-4 py-2 bg-[#FF4B55] hover:bg-[#e03d47] disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-xs rounded-lg transition-colors"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Submit & Revert to Stage 3</span>
@@ -1089,7 +1089,7 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
           
           {/* Left: 4 Binary Checks */}
           <div className="w-full md:w-auto flex flex-wrap items-center gap-2 sm:gap-3">
-            <span className="text-[11px] font-mono text-[#8F9CAE] uppercase tracking-wider hidden xl:inline">
+            <span className="text-xs font-medium text-slate-400 hidden xl:inline">
               Mandatory Checklist:
             </span>
 
@@ -1097,7 +1097,7 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
             <button
               type="button"
               onClick={() => handleToggleCheck('qaToneApproved')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
                 asset.qaToneApproved
                   ? 'bg-[#00E599]/15 text-[#00E599] border-[#00E599]/40'
                   : 'bg-[#181E2C] text-[#8F9CAE] border-white/10 hover:border-white/20'
@@ -1117,7 +1117,7 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
             <button
               type="button"
               onClick={() => handleToggleCheck('qaSpecsValidated')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
                 asset.qaSpecsValidated
                   ? 'bg-[#00E599]/15 text-[#00E599] border-[#00E599]/40'
                   : 'bg-[#181E2C] text-[#8F9CAE] border-white/10 hover:border-white/20'
@@ -1137,7 +1137,7 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
             <button
               type="button"
               onClick={() => handleToggleCheck('qaRightsCleared')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
                 asset.qaRightsCleared
                   ? 'bg-[#00E599]/15 text-[#00E599] border-[#00E599]/40'
                   : 'bg-[#181E2C] text-[#8F9CAE] border-white/10 hover:border-white/20'
@@ -1163,11 +1163,11 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
                   ? 'Veto Lock: Only Content Manager can authorize final sign-off'
                   : 'Toggle Final Gatekeeper Sign-off'
               }
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
                 currentUser.role !== 'CONTENT_MANAGER'
                   ? 'opacity-60 cursor-not-allowed bg-[#181E2C] text-[#8F9CAE] border-white/5'
                   : asset.qaGatekeeperSigned
-                  ? 'bg-[#00E599]/20 text-[#00E599] border-[#00E599]/50 shadow-sm shadow-[#00E599]/20'
+                  ? 'bg-[#00E599]/20 text-[#00E599] border-[#00E599]/50'
                   : 'bg-[#181E2C] text-[#8F9CAE] border-white/10 hover:border-white/20'
               }`}
             >
@@ -1202,9 +1202,9 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
               type="button"
               disabled={!signOffCheck.canSignOff || isSigningOff}
               onClick={handleFinalSignOff}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${
                 signOffCheck.canSignOff
-                  ? 'bg-[#00E599] hover:bg-[#00c985] text-black shadow-lg shadow-[#00E599]/30 hover:scale-[1.02] cursor-pointer'
+                  ? 'bg-[#00E599] hover:bg-[#00c985] text-black cursor-pointer'
                   : 'bg-white/5 text-[#8F9CAE] border border-white/10 opacity-50 cursor-not-allowed'
               }`}
             >

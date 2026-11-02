@@ -145,33 +145,54 @@ ALTER TABLE public.content_assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 
--- 7. RLS Policies: Allow authenticated users full read/write, public read for preview
-CREATE POLICY "Allow public read content_assets"
+-- 7. RLS Policies: Authenticated operators full access, users can only modify their own profile
+-- Content Assets: Public read for client preview/dashboard, but only authenticated operators can modify
+CREATE POLICY "Allow read content_assets"
   ON public.content_assets FOR SELECT
   USING (true);
 
-CREATE POLICY "Allow authenticated insert/update content_assets"
-  ON public.content_assets FOR ALL
+CREATE POLICY "Allow authenticated insert content_assets"
+  ON public.content_assets FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated update content_assets"
+  ON public.content_assets FOR UPDATE
+  TO authenticated
   USING (true)
   WITH CHECK (true);
 
-CREATE POLICY "Allow public read profiles"
+CREATE POLICY "Allow authenticated delete content_assets"
+  ON public.content_assets FOR DELETE
+  TO authenticated
+  USING (true);
+
+-- Profiles: Public read for avatar/author attribution, updates strictly scoped to owning user
+CREATE POLICY "Allow read profiles"
   ON public.profiles FOR SELECT
   USING (true);
 
-CREATE POLICY "Allow update profiles"
-  ON public.profiles FOR ALL
-  USING (true)
-  WITH CHECK (true);
+CREATE POLICY "Allow users update own profile"
+  ON public.profiles FOR UPDATE
+  TO authenticated
+  USING (auth.uid()::text = id)
+  WITH CHECK (auth.uid()::text = id);
 
-CREATE POLICY "Allow public read user_profiles"
+CREATE POLICY "Allow users insert own profile"
+  ON public.profiles FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid()::text = id);
+
+-- Legacy user_profiles table RLS hardening
+CREATE POLICY "Allow read user_profiles"
   ON public.user_profiles FOR SELECT
   USING (true);
 
 CREATE POLICY "Allow users update own user_profile"
-  ON public.user_profiles FOR ALL
-  USING (true)
-  WITH CHECK (true);
+  ON public.user_profiles FOR UPDATE
+  TO authenticated
+  USING (auth.uid()::text = id)
+  WITH CHECK (auth.uid()::text = id);
 
 -- 8. Seed Initial Content Assets into Supabase
 INSERT INTO public.content_assets (

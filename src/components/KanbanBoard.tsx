@@ -336,7 +336,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
             {/* Banner Title with #00E599 status indicator dot */}
             <div className="flex items-center gap-2 pt-0.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#00E599] shadow-sm shadow-[#00E599]/50 shrink-0" />
+              <span className="h-2 w-2 rounded-full bg-[#00E599] shrink-0" />
               <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[#FFFFFF]">
                 Active Production Engine
               </h1>
@@ -361,7 +361,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 type="button"
                 onClick={onOpenDashboard}
                 title="View 30-Day Content Velocity & SLA Dashboard"
-                className="px-3.5 py-2 rounded-lg bg-[#181E2C] hover:bg-[#202738] text-white border border-white/10 hover:border-[#00E599]/40 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                className="px-3.5 py-2 rounded-lg bg-[#181E2C] hover:bg-[#202738] text-white border border-white/10 hover:border-[#00E599]/40 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
               >
                 <TrendingUp className="h-3.5 w-3.5 text-[#00E599]" />
                 <span>Velocity & SLA</span>
@@ -376,7 +376,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 type="button"
                 onClick={onOpenNewAsset}
                 title="Create New Brief (Shortcut: N)"
-                className="px-4 py-2 rounded-lg bg-[#00E599] text-[#0B0E14] font-semibold hover:bg-[#00cc88] text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2 rounded-lg bg-[#00E599] text-[#0B0E14] font-semibold hover:bg-[#00cc88] text-xs transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
                 <span>+ New Brief</span>
@@ -399,70 +399,70 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 if (filterOnlySla) onToggleOnlySla();
                 if (quickFilter !== 'NONE') onChangeQuickFilter('NONE');
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
                 selectedTier === 'ALL' && !filterOnlySla && quickFilter === 'NONE'
                   ? 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40'
                   : 'bg-[#181E2C] text-[#8F9CAE] hover:text-white border border-white/5'
               }`}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
-              <span>ALL PIPELINE</span>
+              <span>All Pipeline</span>
             </button>
 
             {/* HERO TIER */}
             <button
               type="button"
               onClick={() => onChangeTier('HERO')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
                 selectedTier === 'HERO'
                   ? 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40'
                   : 'bg-[#181E2C] text-[#8F9CAE] hover:text-white border border-white/5'
               }`}
             >
               <Flame className="h-3.5 w-3.5" />
-              <span>HERO TIER</span>
+              <span>Hero Tier</span>
             </button>
 
             {/* HUB SERIES */}
             <button
               type="button"
               onClick={() => onChangeTier('HUB')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
                 selectedTier === 'HUB'
                   ? 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40'
                   : 'bg-[#181E2C] text-[#8F9CAE] hover:text-white border border-white/5'
               }`}
             >
               <Layers className="h-3.5 w-3.5" />
-              <span>HUB SERIES</span>
+              <span>Hub Series</span>
             </button>
 
             {/* HYGIENE */}
             <button
               type="button"
               onClick={() => onChangeTier('HYGIENE')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
                 selectedTier === 'HYGIENE'
                   ? 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40'
                   : 'bg-[#181E2C] text-[#8F9CAE] hover:text-white border border-white/5'
               }`}
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>HYGIENE</span>
+              <span>Hygiene</span>
             </button>
 
             {/* SLA ACTIVE */}
             <button
               type="button"
               onClick={onToggleOnlySla}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap ${
                 filterOnlySla
                   ? 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/40'
                   : 'bg-[#181E2C] text-[#8F9CAE] hover:text-white border border-white/5'
               }`}
             >
               <Clock className="h-3.5 w-3.5" />
-              <span>SLA ACTIVE</span>
+              <span>SLA Active</span>
             </button>
 
             {/* Active Quick Filter Pill if toggled from Sidebar */}
@@ -679,7 +679,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               <button
                 type="button"
                 onClick={onLoadDemoData}
-                className="flex-1 md:flex-none px-3.5 py-2 rounded-xl bg-[#181E2C] hover:bg-[#202738] border border-white/10 text-xs font-semibold text-[#8F9CAE] hover:text-white transition-all cursor-pointer"
+                className="flex-1 md:flex-none px-3.5 py-2 rounded-xl bg-[#181E2C] hover:bg-[#202738] border border-white/10 text-xs font-semibold text-[#8F9CAE] hover:text-white transition-colors cursor-pointer"
                 title="Populate sample workflow templates to inspect RACI states"
               >
                 Load Demo Templates
@@ -689,7 +689,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               <button
                 type="button"
                 onClick={onOpenNewAsset}
-                className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-[#00E599] hover:bg-[#00c985] text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-[#00E599]/20 cursor-pointer"
+                className="flex-1 md:flex-none px-4 py-2 rounded-xl bg-[#00E599] hover:bg-[#00c985] text-black font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
                 <span>+ Create First Brief</span>
@@ -712,7 +712,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 onDragOver={(e) => handleDragOver(e, col.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, col.id)}
-                className={`flex-1 min-w-[195px] flex flex-col rounded-2xl bg-[#121620] border transition-all ${
+                className={`flex-1 min-w-[195px] flex flex-col rounded-2xl bg-[#121620] border transition-colors ${
                   isDropTarget
                     ? 'border-[#00E599] bg-[#181E2C] ring-2 ring-[#00E599]/20'
                     : 'border-white/[0.07]'
@@ -721,7 +721,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 {/* Column Header */}
                 <div className="p-3.5 border-b border-white/[0.07] bg-[#121620] rounded-t-2xl">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#00E599] px-2 py-0.5 rounded-md bg-[#00E599]/10 border border-[#00E599]/30 font-semibold">
+                    <span className="text-[11px] font-mono text-[#00E599] px-2 py-0.5 rounded-md bg-[#00E599]/10 border border-[#00E599]/30 font-medium">
                       {col.badge}
                     </span>
                     <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-[#181E2C] text-white border border-white/[0.07] tabular-nums">
@@ -801,16 +801,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 <div
                   key={asset.id}
                   onClick={() => setEditingArchiveId(isEditing ? null : asset.id)}
-                  className="bg-[#181E2C] hover:bg-[#1E2536] border border-white/[0.07] hover:border-[#00E599]/40 p-3.5 rounded-xl cursor-pointer flex flex-col gap-2.5 transition-all"
+                  className="bg-[#181E2C] hover:bg-[#1E2536] border border-white/[0.07] hover:border-[#00E599]/40 p-3.5 rounded-xl cursor-pointer flex flex-col gap-2.5 transition-colors"
                 >
                   <div className="flex items-center justify-between gap-2 text-[11px]">
-                    <span className="text-[#00E599] font-semibold uppercase tracking-wide flex items-center gap-1">
+                    <span className="text-[#00E599] font-medium flex items-center gap-1">
                       <CheckCircle2 className="h-3.5 w-3.5" /> Published
                     </span>
                     <div className="flex items-center gap-1.5">
                       {isWinner && (
-                        <span className="px-2 py-0.5 rounded-md bg-[#F5A524]/15 text-[#F5A524] border border-[#F5A524]/40 font-bold text-[10px]">
-                          🏆 WINNING FORMAT
+                        <span className="px-2 py-0.5 rounded-md bg-[#F5A524]/15 text-[#F5A524] border border-[#F5A524]/40 font-semibold text-[10px]">
+                          🏆 Winning Format
                         </span>
                       )}
                       <button
