@@ -16,7 +16,8 @@ import {
   CornerDownLeft,
   Trash2,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  Zap
 } from 'lucide-react';
 import { AssetStatus, ContentAsset, FormatTier, PillarType, QuickFilterType, User } from '../types';
 import { PIPELINE_COLUMNS } from '../lib/stateMachine';
@@ -44,6 +45,7 @@ interface KanbanBoardProps {
   onChangeQuickFilter: (filter: QuickFilterType) => void;
   onOpenNewAsset?: () => void;
   onOpenDashboard?: () => void;
+  onOpenTopology?: () => void;
   onLoadDemoData?: () => void;
 }
 
@@ -67,6 +69,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onChangeQuickFilter,
   onOpenNewAsset,
   onOpenDashboard,
+  onOpenTopology,
   onLoadDemoData
 }) => {
   const [draggedAsset, setDraggedAsset] = useState<ContentAsset | null>(null);
@@ -388,9 +391,31 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           </div>
         </div>
 
-        {/* Filter Tabs & Search Bar */}
+        {/* Filter Tabs, View Switcher & Search Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            {/* View Switcher Toggle: [ ⊞ Kanban Board ] | [ ⚡ Live Topology Engine ] */}
+            {onOpenTopology && (
+              <div className="p-0.5 rounded-lg bg-[#181E2C] border border-white/10 flex items-center gap-0.5 mr-1 shrink-0">
+                <button
+                  type="button"
+                  className="px-2.5 py-1 rounded-md text-xs font-bold bg-[#00E599] text-[#0B0E14] flex items-center gap-1.5 shadow-sm cursor-default"
+                >
+                  <LayoutGrid className="h-3 w-3 stroke-[2.5]" />
+                  <span>Kanban</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenTopology}
+                  title="Switch to Animated Live System Topology Engine"
+                  className="px-2.5 py-1 rounded-md text-xs font-semibold text-[#8F9CAE] hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <Zap className="h-3 w-3 text-[#00E599]" />
+                  <span>Live Topology</span>
+                </button>
+              </div>
+            )}
+
             {/* ALL PIPELINE */}
             <button
               type="button"
@@ -405,7 +430,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   : 'bg-[#181E2C] text-[#8F9CAE] hover:text-white border border-white/5'
               }`}
             >
-              <LayoutGrid className="h-3.5 w-3.5" />
+              <Layers className="h-3.5 w-3.5" />
               <span>All Pipeline</span>
             </button>
 

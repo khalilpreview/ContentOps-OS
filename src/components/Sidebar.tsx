@@ -19,8 +19,8 @@ import { ContentAsset, QuickFilterType, User } from '../types';
 import { isNeedsMySignOffAsset, isSlaRiskAsset, calculateSla } from '../lib/sla';
 
 interface SidebarProps {
-  currentView: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin';
-  onChangeView: (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin') => void;
+  currentView: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin' | 'topology';
+  onChangeView: (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin' | 'topology') => void;
   quickFilter: QuickFilterType;
   onChangeQuickFilter: (filter: QuickFilterType) => void;
   assets: ContentAsset[];
@@ -84,6 +84,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       onClick: () => {
         onChangeQuickFilter('NONE');
         onChangeView('pipeline');
+      }
+    },
+    {
+      id: 'topology' as const,
+      label: 'Live System Topology',
+      icon: Zap,
+      badgeText: 'FLOW',
+      badgeColor: 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/30',
+      isActive: currentView === 'topology',
+      onClick: () => {
+        onChangeQuickFilter('NONE');
+        onChangeView('topology');
       }
     },
     {

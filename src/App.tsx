@@ -12,6 +12,7 @@ import { AuthPage } from './components/AuthPage';
 import { Sidebar } from './components/Sidebar';
 import { QAInspectorModal } from './components/qa/QAInspectorModal';
 import { Dashboard } from './components/Dashboard';
+import { LiveTopologyDashboard } from './components/topology/LiveTopologyDashboard';
 import { FloatingCopilot } from './components/copilot/FloatingCopilot';
 import { useCopilotContext } from './hooks/useCopilotContext';
 import { SuperAdminPage } from './components/SuperAdminPage';
@@ -175,14 +176,14 @@ export default function App() {
   });
 
   // Filters & Views
-  const [currentView, setCurrentView] = useState<'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin'>('pipeline');
+  const [currentView, setCurrentView] = useState<'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin' | 'topology'>('pipeline');
   const [selectedTier, setSelectedTier] = useState<FormatTier | 'ALL'>('ALL');
   const [selectedPillar, setSelectedPillar] = useState<PillarType | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterOnlySla, setFilterOnlySla] = useState(false);
   const [quickFilter, setQuickFilter] = useState<QuickFilterType>('NONE');
 
-  const handleChangeView = (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin') => {
+  const handleChangeView = (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin' | 'topology') => {
     setCurrentView(view);
     if (view === 'sla') {
       setFilterOnlySla(true);
@@ -194,7 +195,7 @@ export default function App() {
       } else {
         setIsNewAssetOpen(true);
       }
-    } else if (view === 'dashboard' || view === 'archive' || view === 'admin') {
+    } else if (view === 'dashboard' || view === 'archive' || view === 'admin' || view === 'topology') {
       setFilterOnlySla(false);
     } else {
       setFilterOnlySla(false);
@@ -897,6 +898,20 @@ export default function App() {
                 onNavigateToKanban={() => handleChangeView('pipeline')}
                 onOpenNewAsset={() => setIsNewAssetOpen(true)}
               />
+            ) : currentView === 'topology' ? (
+              <LiveTopologyDashboard
+                assets={assets}
+                currentUser={currentUser}
+                onNavigateToKanban={() => handleChangeView('pipeline')}
+                onOpenAssetDetail={(asset) => {
+                  if (asset.status === 'QA_GATE') {
+                    setSelectedAssetForQa(asset);
+                  } else {
+                    setSelectedAssetForDetail(asset);
+                  }
+                }}
+                onOpenNewAsset={() => setIsNewAssetOpen(true)}
+              />
             ) : (
               <KanbanBoard
                 assets={assets}
@@ -924,6 +939,7 @@ export default function App() {
                 onChangeQuickFilter={setQuickFilter}
                 onOpenNewAsset={() => setIsNewAssetOpen(true)}
                 onOpenDashboard={() => handleChangeView('dashboard')}
+                onOpenTopology={() => handleChangeView('topology')}
                 onLoadDemoData={handleLoadDemoData}
               />
             )}
