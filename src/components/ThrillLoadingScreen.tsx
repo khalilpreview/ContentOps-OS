@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { RotateCcw, ArrowRight, Pause, Play } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
 
 interface ThrillLoadingScreenProps {
   onComplete: () => void;
@@ -102,97 +102,67 @@ export const ThrillLoadingScreen: React.FC<ThrillLoadingScreenProps> = ({
   // Overall progress from 0 to 100
   const [progress, setProgress] = useState<number>(0);
   const [waveTick, setWaveTick] = useState<number>(0);
-  const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isExiting, setIsExiting] = useState<boolean>(false);
-  const [autoDismissCancelled, setAutoDismissCancelled] = useState<boolean>(mode === 'preview');
 
   const startTimeRef = useRef<number | null>(null);
-  const pausedProgressRef = useRef<number>(0);
   const rafRef = useRef<number | null>(null);
   const exitTimerRef = useRef<number | null>(null);
 
   // Total duration of the choreographed outline -> liquid fill animation (ms)
-  const TOTAL_DURATION_MS = 3400;
+  const TOTAL_DURATION_MS = 2800;
 
   const triggerExit = useCallback(() => {
     if (isExiting) return;
     setIsExiting(true);
     window.setTimeout(() => {
       onComplete();
-    }, 520);
+    }, 450);
   }, [isExiting, onComplete]);
 
-  const handleReplay = () => {
-    if (exitTimerRef.current) {
-      window.clearTimeout(exitTimerRef.current);
-      exitTimerRef.current = null;
-    }
-    setIsExiting(false);
-    setAutoDismissCancelled(true);
-    setIsPaused(false);
-    pausedProgressRef.current = 0;
-    startTimeRef.current = performance.now();
-    setProgress(0);
-  };
-
-  const handleTogglePause = () => {
-    setAutoDismissCancelled(true);
-    if (isPaused) {
-      // Resume from current progress
-      pausedProgressRef.current = progress;
-      startTimeRef.current = performance.now();
-      setIsPaused(false);
-    } else {
-      setIsPaused(true);
-    }
-  };
-
-  const handleManualScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const nextVal = Number(e.target.value);
-    setAutoDismissCancelled(true);
-    setIsPaused(true);
-    pausedProgressRef.current = nextVal;
-    setProgress(nextVal);
-  };
+  // Keyboard accessibility: Allow Space or Enter or Escape to skip directly into workspace
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape') {
+        e.preventDefault();
+        triggerExit();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [triggerExit]);
 
   useEffect(() => {
     startTimeRef.current = performance.now();
 
     const step = (now: number) => {
-      // Always advance the fluid wave phase so water continues undulating even when paused
       setWaveTick(now * 0.0045);
 
-      if (!isPaused) {
-        if (startTimeRef.current === null) {
-          startTimeRef.current = now;
-        }
-        const elapsed = now - startTimeRef.current;
-        const rawFraction = Math.min(
-          1,
-          pausedProgressRef.current / 100 + elapsed / TOTAL_DURATION_MS
-        );
+      if (startTimeRef.current === null) {
+        startTimeRef.current = now;
+      }
+      const elapsed = now - startTimeRef.current;
+      const rawFraction = Math.min(1, elapsed / TOTAL_DURATION_MS);
 
-        // Smooth easing curve: deliberate outline trace (0..0.22), steady dynamic liquid rise (0.22..0.95), crisp lock (0.95..1)
-        let easedProgress: number;
-        if (rawFraction < 0.22) {
-          // Outline drawing phase: 0% -> 18%
-          const t = rawFraction / 0.22;
-          easedProgress = t * 18;
-        } else {
-          // Liquid filling phase: 18% -> 100% with cubic ease-in-out
-          const t = (rawFraction - 0.22) / 0.78;
-          const smoothT = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-          easedProgress = 18 + smoothT * 82;
-        }
+      // Smooth easing curve: outline trace (0..0.22), dynamic liquid rise (0.22..0.95), lock (0.95..1)
+      let easedProgress: number;
+      if (rawFraction < 0.22) {
+        const t = rawFraction / 0.22;
+        easedProgress = t * 18;
+      } else {
+        const t = (rawFraction - 0.22) / 0.78;
+        const smoothT = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        easedProgress = 18 + smoothT * 82;
+      }
 
-        const clamped = Math.min(100, Math.max(0, easedProgress));
-        setProgress(clamped);
+      const clamped = Math.min(100, Math.max(0, easedProgress));
+      setProgress(clamped);
 
-        if (clamped >= 100 && !autoDismissCancelled && !exitTimerRef.current) {
-          exitTimerRef.current = window.setTimeout(() => {
-            triggerExit();
-          }, 550);
-        }
+      if (clamped >= 100 && !exitTimerRef.current) {
+        // In auto mode, automatically exit cleanly into workspace; in preview mode, allow brief hold
+        const holdDelay = mode === 'preview' ? 1200 : 420;
+        exitTimerRef.current = window.setTimeout(() => {
+          triggerExit();
+        }, holdDelay);
       }
 
       rafRef.current = requestAnimationFrame(step);
@@ -204,9 +174,9 @@ export const ThrillLoadingScreen: React.FC<ThrillLoadingScreenProps> = ({
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (exitTimerRef.current) window.clearTimeout(exitTimerRef.current);
     };
-  }, [isPaused, autoDismissCancelled, triggerExit]);
+  }, [mode, triggerExit]);
 
-  // Phase 1: Outline stroke draw-in (0% -> 22% of overall progress maps to 0 -> 100% outline drawn)
+  // Phase 1: Outline stroke draw-in (0% -> 20% of overall progress maps to 0 -> 100% outline drawn)
   const outlineFactor = Math.min(1, progress / 20);
   const strokeDashTotal = 180;
   const strokeDashOffset = strokeDashTotal * (1 - outlineFactor);
@@ -215,7 +185,7 @@ export const ThrillLoadingScreen: React.FC<ThrillLoadingScreenProps> = ({
   const liquidFillFraction = Math.max(0, Math.min(1, (progress - 14) / 84));
 
   // SVG viewBox vertical range is 0 (top) to 20 (bottom).
-  // We map 0% liquid to y = 21.8 (just below base) and 100% liquid to y = -1.2 (completely submerged).
+  // 0% liquid is y = 21.6 (just below base) and 100% liquid is y = -1.2 (completely submerged).
   const waterLevelY = 21.6 - liquidFillFraction * 22.8;
 
   // Dynamic wave amplitude: zero when completely empty or 100% full, lively slosh in the middle
@@ -263,68 +233,69 @@ export const ThrillLoadingScreen: React.FC<ThrillLoadingScreenProps> = ({
   const isFullyFilled = progress >= 98.5;
 
   const statusLabel =
-    progress < 18
-      ? 'Tracing Vector Geometry'
+    progress < 20
+      ? 'Calibrating Vector Engine'
       : progress < 55
-      ? 'Flooding Letterforms'
-      : progress < 96
-      ? 'Equalizing Surface Tension'
-      : 'Thrill ContentOps Ready';
+      ? 'Hydrating Production Pipeline'
+      : progress < 94
+      ? 'Aligning Enterprise Protocols'
+      : 'ContentOps Ready';
 
   return (
     <div
       role="dialog"
       aria-label="Thrill ContentOps Loading Screen"
       className={`fixed inset-0 z-[120] bg-[#0B0E14] text-white flex flex-col justify-between select-none overflow-hidden transition-all duration-500 ${
-        isExiting ? 'opacity-0 scale-[1.03] pointer-events-none' : 'opacity-100 scale-100'
+        isExiting ? 'opacity-0 scale-[1.02] pointer-events-none' : 'opacity-100 scale-100'
       }`}
     >
-      {/* Subtle architectural background atmosphere */}
+      {/* Background radial atmosphere & subtle architectural grid */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage: `
-            radial-gradient(circle at 50% 46%, rgba(255, 255, 255, ${
-              0.03 + liquidFillFraction * 0.05
-            }) 0%, rgba(0, 229, 153, 0.03) 28%, transparent 68%),
-            linear-gradient(to right, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.018) 1px, transparent 1px)
+            radial-gradient(circle at 50% 50%, rgba(0, 229, 153, ${0.05 + liquidFillFraction * 0.08}) 0%, rgba(255, 255, 255, 0.03) 30%, transparent 70%),
+            linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px)
           `,
-          backgroundSize: '100% 100%, 64px 64px, 64px 64px',
+          backgroundSize: '100% 100%, 48px 48px, 48px 48px',
         }}
       />
 
-      {/* Top minimal header bar */}
-      <header className="relative z-10 w-full max-w-[1440px] mx-auto px-6 sm:px-10 pt-6 flex items-center justify-between text-xs text-[#8F9CAE]">
+      {/* Top minimal header */}
+      <header className="relative z-10 w-full max-w-5xl mx-auto px-6 sm:px-10 pt-8 flex items-center justify-between text-xs text-[#8F9CAE]">
         <div className="flex items-center gap-2.5">
-          <span className="font-semibold text-white tracking-tight">Thrill</span>
-          <span aria-hidden="true">·</span>
-          <span>ContentOps OS</span>
+          <span className="font-semibold text-white tracking-wide uppercase text-[11px]">Thrill</span>
+          <span className="text-[#00E599]" aria-hidden="true">/</span>
+          <span className="text-white/70">ContentOps OS</span>
         </div>
-        <div className="font-mono tabular-nums text-[#8F9CAE]">
-          <span>{Math.round(progress).toString().padStart(3, '0')}%</span>
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#00E599] animate-pulse" />
+          <span className="font-mono tabular-nums text-white/90 text-xs tracking-wider">
+            {Math.round(progress).toString().padStart(3, '0')}%
+          </span>
         </div>
       </header>
 
-      {/* Center Stage: The Outlined -> White Water-Filled Thrill SVG */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6">
+      {/* Center Stage: Hero Outlined -> Liquid White Thrill Logo */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 -mt-4">
         <div className="relative w-full max-w-[560px] flex flex-col items-center">
-          {/* Ambient optical bloom behind logo as water level nears 100% */}
+          {/* Ambient luminous optical bloom behind logo */}
           <div
-            className="pointer-events-none absolute inset-0 rounded-full blur-3xl transition-opacity duration-500"
+            className="pointer-events-none absolute inset-0 -m-16 rounded-full blur-3xl transition-opacity duration-700"
             style={{
               background:
-                'radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(0,229,153,0.08) 45%, transparent 72%)',
-              opacity: 0.15 + liquidFillFraction * 0.85,
-              transform: `scale(${0.85 + liquidFillFraction * 0.25})`,
+                'radial-gradient(circle, rgba(0, 229, 153, 0.16) 0%, rgba(255, 255, 255, 0.12) 35%, transparent 72%)',
+              opacity: 0.25 + liquidFillFraction * 0.75,
+              transform: `scale(${0.9 + liquidFillFraction * 0.2})`,
             }}
           />
 
-          {/* Calibration frame marks */}
-          <div className="relative w-full py-10 sm:py-14 px-6 sm:px-12 flex items-center justify-center">
+          {/* Thrill SVG Liquid Container */}
+          <div className="relative w-full py-8 sm:py-12 px-6 sm:px-12 flex items-center justify-center">
             <svg
               viewBox="-2 -2 64 24"
-              className="w-full max-w-[460px] h-auto overflow-visible"
+              className="w-full max-w-[460px] h-auto overflow-visible drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)]"
               xmlns="http://www.w3.org/2000/svg"
               aria-label="Thrill Logo Liquid Fill Animation"
             >
@@ -336,10 +307,10 @@ export const ThrillLoadingScreen: React.FC<ThrillLoadingScreenProps> = ({
                   ))}
                 </clipPath>
 
-                {/* Pure white liquid vertical gradient with subtle pearlescent depth */}
+                {/* Pure white liquid vertical gradient with pearlescent depth */}
                 <linearGradient id="thrill-pure-white-liquid" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stopColor="#FFFFFF" />
-                  <stop offset="70%" stopColor="#F8FAFC" />
+                  <stop offset="65%" stopColor="#F8FAFC" />
                   <stop offset="100%" stopColor="#E2E8F0" />
                 </linearGradient>
 
@@ -350,10 +321,10 @@ export const ThrillLoadingScreen: React.FC<ThrillLoadingScreenProps> = ({
                   <stop offset="100%" stopColor="rgba(255, 255, 255, 0.55)" />
                 </linearGradient>
 
-                {/* Subtle refractive subsurface back wave */}
+                {/* Subtle emerald refractive subsurface back wave */}
                 <linearGradient id="thrill-back-wave-grad" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="rgba(0, 229, 153, 0.35)" />
-                  <stop offset="50%" stopColor="rgba(255, 255, 255, 0.38)" />
+                  <stop offset="50%" stopColor="rgba(255, 255, 255, 0.40)" />
                   <stop offset="100%" stopColor="rgba(0, 229, 153, 0.35)" />
                 </linearGradient>
 
@@ -377,7 +348,7 @@ export const ThrillLoadingScreen: React.FC<ThrillLoadingScreenProps> = ({
 
               {/* LAYER 2: Clipped Liquid Water Simulation inside the Thrill letterforms */}
               <g clipPath="url(#thrill-water-clip)">
-                {/* 2A. Deep subsurface refractive back wave */}
+                {/* 2A. Deep subsurface emerald refractive back wave */}
                 {liquidFillFraction > 0 && (
                   <path d={backWavePath} fill="url(#thrill-back-wave-grad)" />
                 )}
@@ -412,7 +383,6 @@ export const ThrillLoadingScreen: React.FC<ThrillLoadingScreenProps> = ({
                 {liquidFillFraction > 0.08 &&
                   liquidFillFraction < 0.98 &&
                   BUBBLES.map((b) => {
-                    // Loop bubble upward from bottom (20) toward waterLevelY
                     const cycle = (waveTick * b.speed + b.phase) % 1;
                     const bubbleY = 20.5 - cycle * (20.5 - waterLevelY + 1.5);
                     const bubbleX =
@@ -454,23 +424,24 @@ export const ThrillLoadingScreen: React.FC<ThrillLoadingScreenProps> = ({
           </div>
 
           {/* Typography & Fluid Telemetry Readout below Logo */}
-          <div className="mt-4 flex flex-col items-center gap-3 w-full max-w-[360px]">
+          <div className="mt-5 flex flex-col items-center gap-3 w-full max-w-[340px]">
             <div className="flex items-center justify-between w-full text-xs">
-              <span className="text-[#8F9CAE] font-medium tracking-wide">
-                {statusLabel}
+              <span className="text-[#8F9CAE] font-medium tracking-wide flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#00E599] animate-pulse" />
+                <span>{statusLabel}</span>
               </span>
               <span className="font-mono tabular-nums text-white font-semibold">
                 {Math.round(progress)}%
               </span>
             </div>
 
-            {/* Ultra-thin precision water-level progress bar */}
-            <div className="w-full h-1 bg-[#181E2C] rounded-full overflow-hidden">
+            {/* Precision water-level progress track with glow pulse */}
+            <div className="w-full h-1 bg-[#181E2C] rounded-full overflow-hidden p-[1px] border border-white/[0.04]">
               <div
-                className="h-full bg-white transition-all duration-75 rounded-full"
+                className="h-full bg-gradient-to-r from-white via-white to-[#00E599] transition-all duration-75 rounded-full"
                 style={{
                   width: `${progress}%`,
-                  boxShadow: '0 0 12px rgba(255, 255, 255, 0.7)',
+                  boxShadow: '0 0 14px rgba(0, 229, 153, 0.45)',
                 }}
               />
             </div>
@@ -478,65 +449,23 @@ export const ThrillLoadingScreen: React.FC<ThrillLoadingScreenProps> = ({
         </div>
       </main>
 
-      {/* Bottom Interactive Control Bar (Replay / Scrub / Enter Workspace) */}
-      <footer className="relative z-10 w-full max-w-[1440px] mx-auto px-6 sm:px-10 pb-7 flex flex-wrap items-center justify-between gap-4 border-t border-white/[0.06] pt-4 text-xs text-[#8F9CAE]">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handleReplay}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#121620] hover:bg-[#181E2C] text-white border border-white/10 transition-colors cursor-pointer"
-            title="Replay Outline to Liquid Fill Animation"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-[#00E599]" />
-            <span>Replay</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleTogglePause}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#121620] hover:bg-[#181E2C] text-[#8F9CAE] hover:text-white border border-white/10 transition-colors cursor-pointer"
-            title={isPaused ? 'Resume Liquid Fill' : 'Pause & Inspect Wave Physics'}
-          >
-            {isPaused ? (
-              <>
-                <Play className="w-3.5 h-3.5 text-[#00E599]" />
-                <span>Resume</span>
-              </>
-            ) : (
-              <>
-                <Pause className="w-3.5 h-3.5" />
-                <span>Inspect</span>
-              </>
-            )}
-          </button>
-
-          {/* Interactive Fluid Level Scrubber when paused or inspecting */}
-          <div className="hidden sm:flex items-center gap-2.5 pl-2">
-            <label htmlFor="thrill-water-scrubber" className="text-[#8F9CAE] whitespace-nowrap">
-              Water Level
-            </label>
-            <input
-              id="thrill-water-scrubber"
-              type="range"
-              min={0}
-              max={100}
-              step={0.5}
-              value={progress}
-              onChange={handleManualScrub}
-              className="w-28 accent-white cursor-pointer h-1 bg-[#181E2C] rounded-lg"
-            />
-          </div>
+      {/* Clean, unobtrusive minimal bottom bar with skip cue */}
+      <footer className="relative z-10 w-full max-w-5xl mx-auto px-6 sm:px-10 pb-8 flex items-center justify-between text-[11px] text-[#8F9CAE]">
+        <div className="flex items-center gap-2 text-[#8F9CAE]/70">
+          <span>Enterprise Content Orchestration</span>
         </div>
 
         <button
           type="button"
           onClick={triggerExit}
-          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-white text-[#0B0E14] hover:bg-white/90 font-semibold transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-all duration-150 cursor-pointer group"
+          title="Press Space or Enter to proceed"
         >
-          <span>Enter Workspace</span>
-          <ArrowRight className="w-3.5 h-3.5" />
+          <span>Skip to workspace</span>
+          <ArrowRight className="w-3 h-3 text-[#00E599] group-hover:translate-x-0.5 transition-transform" />
         </button>
       </footer>
     </div>
   );
 };
+
