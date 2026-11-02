@@ -10,23 +10,24 @@ export interface CopilotChatMessage {
 
 export function buildCopilotSystemPrompt(context: CopilotSystemContext): string {
   return `You are Thrill Copilot, the AI Chief of Staff and Operational Producer for Thrill.com's ContentOps OS.
-You are embedded directly inside the Content Manager's dashboard.
+You are embedded directly inside the ContentOps operating system.
 
 CURRENT OPERATIONAL CONTEXT:
-- Active User: ${context.currentUser.name} (Role: ${context.currentUser.role})
+- Active Operator: ${context.currentUser.name} (Security Clearance: ${context.currentUser.role})
 - Total Assets in Engine: ${context.pipelineSummary.activePipelineCount} / ${context.pipelineSummary.capacityLimit}
 - SLA Risks: ${context.pipelineSummary.slaRisks} assets expiring soon (${context.pipelineSummary.breachedCount} breached)
 - Pending QA Gates: ${context.pipelineSummary.pendingQASignoffs} assets awaiting sign-off
 - Active Assets Snapshot: ${JSON.stringify(context.activeCards)}
 
-YOUR CAPABILITIES:
-1. Advise on Thrill marketing strategy, Hero/Hub/Hygiene formats, retention hooks, and cross-channel distribution.
-2. Execute operational actions on the dashboard using your tools (moving cards, signing off QA, splitting Hero assets, filtering views, drafting briefs).
+YOUR CAPABILITIES & TOOLS:
+1. Advise on marketing strategy, Hero/Hub/Hygiene formats, retention hooks, and cross-channel distribution.
+2. Propose operational actions on the dashboard using your tools (moving cards, batch advancing, signing off QA, splitting Hero assets, filtering views, drafting briefs, reassigning owners, generating executive reports).
 
-RULES:
-- When the user asks to move a card, check or update something, use the appropriate tool.
-- Respect RACI boundaries: Only approve final QA sign-offs if active user role is "CONTENT_MANAGER".
-- Keep responses concise, direct, and aligned with Thrill's tone (slick, high-velocity, operational).`;
+RULES & GOVERNANCE:
+- Always format responses using clean Markdown with bolding, lists, and clear next steps.
+- Respect RACI boundaries: Only Content Managers and Super Admins can stamp the final Stage 4 QA Gatekeeper sign-off.
+- Only Super Admins can dispatch magic link user invitations.
+- Keep responses authoritative, proactive, and concise.`;
 }
 
 export async function sendCopilotMessage(
@@ -35,7 +36,7 @@ export async function sendCopilotMessage(
 ): Promise<CopilotResponsePayload> {
   const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')?.content || '';
 
-  // 1. Try server-side /api/ai/copilot endpoint first
+  // 1. Try server-side /api/ai/copilot endpoint first (Netlify / Node proxy)
   try {
     const res = await fetch('/api/ai/copilot', {
       method: 'POST',
@@ -49,7 +50,7 @@ export async function sendCopilotMessage(
           role: 'assistant',
           content: data.content || 'Operational action proposed below:',
           tool_calls: data.tool_calls,
-          engineUsed: data.engineUsed || 'IFM.ai K2 Horizon'
+          engineUsed: data.engineUsed || 'Google Gemini 2.0 (Server)'
         };
       }
     }
@@ -57,18 +58,24 @@ export async function sendCopilotMessage(
     // Continue to client-side / intelligent fallback
   }
 
-  // 2. If IFM.ai API key is configured, call OpenAI-compatible K2 Horizon endpoint with tools
+  // 2. Direct Provider Call (Google Gemini or IFM.ai via OpenAI-compatible SDK)
   const config = getStoredAiConfig();
   if (config.apiKey && config.apiKey.trim() !== '') {
     try {
+      const baseURL = config.provider === 'gemini'
+        ? (config.baseUrl || 'https://generativelanguage.googleapis.com/v1beta/openai/')
+        : (config.baseUrl || 'https://api.ifm.ai/v1');
+
       const client = new OpenAI({
         apiKey: config.apiKey,
-        baseURL: config.baseUrl || 'https://api.ifm.ai/v1',
+        baseURL,
         dangerouslyAllowBrowser: true
       });
 
+      const model = config.model || (config.provider === 'gemini' ? 'gemini-2.0-flash' : 'k2-horizon');
+
       const response = await client.chat.completions.create({
-        model: config.model || 'k2-horizon',
+        model,
         messages: [
           { role: 'system', content: buildCopilotSystemPrompt(context) },
           ...messages
@@ -84,15 +91,17 @@ export async function sendCopilotMessage(
           role: 'assistant',
           content: msg.content || 'Proposed operational action ready for confirmation:',
           tool_calls: (msg.tool_calls as any) || undefined,
-          engineUsed: `IFM.ai K2 Horizon (${config.model || 'k2-horizon'})`
+          engineUsed: config.provider === 'gemini'
+            ? `Google Gemini (${model})`
+            : `IFM.ai K2 Horizon (${model})`
         };
       }
     } catch (err) {
-      console.warn('K2 Horizon live tool call fallback:', err);
+      console.warn('AI live tool call fallback:', err);
     }
   }
 
-  // 3. Deterministic, context-aware K2 Horizon operational engine
-  await new Promise((r) => setTimeout(r, 420));
+  // 3. High-Fidelity Domain Deterministic Operational Engine
+  await new Promise((r) => setTimeout(r, 350));
   return evaluateCopilotCommand(lastUserMessage, context);
 }

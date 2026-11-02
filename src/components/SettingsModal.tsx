@@ -534,11 +534,123 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <ShieldCheck className="h-4 w-4 text-[#00E599] shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold block text-white mb-0.5">
-                  IFM.ai K2 Horizon Engine
+                  Multi-Model Autonomous Engine (Gemini &amp; K2 Horizon)
                 </span>
                 <span>
-                  Powers 1-click Auto-Briefing, 3s Hook Generation (Contrarian, Curiosity, Direct Value), and the Asset Multiplier Repurposing Engine.
+                  Powers real-time Copilot chat, 1-click Auto-Briefing, 3s Hook Generation, Stage 4 QA inspections, and the Asset Multiplier.
                 </span>
+              </div>
+            </div>
+
+            {/* Provider Selector */}
+            <div>
+              <label className="block font-semibold text-[#8F9CAE] uppercase tracking-wider mb-2">
+                Primary Intelligence Provider
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAiConfig({
+                    ...aiConfig,
+                    provider: 'gemini',
+                    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+                    model: 'gemini-2.0-flash'
+                  })}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    aiConfig.provider === 'gemini'
+                      ? 'bg-[#00E599]/10 border-[#00E599] text-white shadow-sm'
+                      : 'bg-[#181E2C] border-white/[0.07] text-[#8F9CAE] hover:border-white/20'
+                  }`}
+                >
+                  <div className="font-bold text-xs text-white flex items-center gap-1.5 mb-1">
+                    <Sparkles className="h-3.5 w-3.5 text-[#00E599]" />
+                    <span>Google Gemini</span>
+                  </div>
+                  <div className="text-[11px] text-[#8F9CAE]">Ultra-fast reasoning, Gemini 2.0 Flash / 1.5 Pro.</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAiConfig({
+                    ...aiConfig,
+                    provider: 'ifm',
+                    baseUrl: 'https://api.ifm.ai/v1',
+                    model: 'k2-horizon'
+                  })}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    aiConfig.provider === 'ifm'
+                      ? 'bg-[#00E599]/10 border-[#00E599] text-white shadow-sm'
+                      : 'bg-[#181E2C] border-white/[0.07] text-[#8F9CAE] hover:border-white/20'
+                  }`}
+                >
+                  <div className="font-bold text-xs text-white flex items-center gap-1.5 mb-1">
+                    <Cpu className="h-3.5 w-3.5 text-sky-400" />
+                    <span>IFM.ai K2 Horizon</span>
+                  </div>
+                  <div className="text-[11px] text-[#8F9CAE]">Specialized marketing &amp; media production model.</div>
+                </button>
+              </div>
+            </div>
+
+            {/* API Key */}
+            <div>
+              <label className="block font-semibold text-[#8F9CAE] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Key className="h-3.5 w-3.5 text-[#8F9CAE]" />
+                  <span>{aiConfig.provider === 'gemini' ? 'Gemini API Key' : 'IFM.ai API Key'}</span>
+                </span>
+                <span className="text-[10px] text-[#8F9CAE] font-normal lowercase">Optional (built-in intelligent fallback active)</span>
+              </label>
+              <input
+                type="password"
+                value={aiConfig.apiKey}
+                onChange={(e) => setAiConfig({ ...aiConfig, apiKey: e.target.value })}
+                placeholder={aiConfig.provider === 'gemini' ? 'AIzaSy...' : 'ifm-...'}
+                className="w-full bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg px-3 py-2 text-white font-mono focus:outline-none"
+              />
+            </div>
+
+            {/* Model Identifier */}
+            <div>
+              <label className="block font-semibold text-[#8F9CAE] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <Cpu className="h-3.5 w-3.5 text-[#8F9CAE]" />
+                <span>Model Identifier</span>
+              </label>
+              <input
+                type="text"
+                value={aiConfig.model}
+                onChange={(e) => setAiConfig({ ...aiConfig, model: e.target.value })}
+                placeholder={aiConfig.provider === 'gemini' ? 'gemini-2.0-flash' : 'k2-horizon'}
+                className="w-full bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg px-3 py-2 text-white font-mono focus:outline-none"
+              />
+              <div className="pt-1.5 flex items-center gap-2">
+                <span className="text-[10px] text-[#8F9CAE]">Presets:</span>
+                {aiConfig.provider === 'gemini' ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setAiConfig({ ...aiConfig, model: 'gemini-2.0-flash' })}
+                      className="px-2 py-0.5 rounded text-[10px] bg-[#181E2C] border border-white/5 hover:border-[#00E599]/40 text-[#00E599]"
+                    >
+                      gemini-2.0-flash
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAiConfig({ ...aiConfig, model: 'gemini-1.5-pro' })}
+                      className="px-2 py-0.5 rounded text-[10px] bg-[#181E2C] border border-white/5 hover:border-white/20 text-[#8F9CAE]"
+                    >
+                      gemini-1.5-pro
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setAiConfig({ ...aiConfig, model: 'k2-horizon' })}
+                    className="px-2 py-0.5 rounded text-[10px] bg-[#181E2C] border border-white/5 hover:border-[#00E599]/40 text-sky-400"
+                  >
+                    k2-horizon
+                  </button>
+                )}
               </div>
             </div>
 
@@ -551,21 +663,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 type="text"
                 value={aiConfig.baseUrl}
                 onChange={(e) => setAiConfig({ ...aiConfig, baseUrl: e.target.value })}
-                placeholder="https://api.ifm.ai/v1"
-                className="w-full bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg px-3 py-2 text-white font-mono focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-[#8F9CAE] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Cpu className="h-3.5 w-3.5 text-[#8F9CAE]" />
-                <span>Model Identifier</span>
-              </label>
-              <input
-                type="text"
-                value={aiConfig.model}
-                onChange={(e) => setAiConfig({ ...aiConfig, model: e.target.value })}
-                placeholder="k2-horizon"
+                placeholder={aiConfig.provider === 'gemini' ? 'https://generativelanguage.googleapis.com/v1beta/openai/' : 'https://api.ifm.ai/v1'}
                 className="w-full bg-[#181E2C] border border-white/[0.07] focus:border-[#00E599] rounded-lg px-3 py-2 text-white font-mono focus:outline-none"
               />
             </div>

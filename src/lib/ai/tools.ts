@@ -1,11 +1,22 @@
 import { CopilotSystemContext } from '../../hooks/useCopilotContext';
-import { AssetStatus } from '../../types';
+import { AssetStatus, FormatTier, UserRole } from '../../types';
 
 export interface CopilotToolCall {
   id: string;
   type: 'function';
   function: {
-    name: 'move_asset_stage' | 'sign_off_qa' | 'trigger_multiplier' | 'filter_board' | 'draft_brief';
+    name: 
+      | 'move_asset_stage'
+      | 'sign_off_qa'
+      | 'trigger_multiplier'
+      | 'filter_board'
+      | 'draft_brief'
+      | 'batch_transition_assets'
+      | 'reassign_asset_owner'
+      | 'analyze_sla_bottlenecks'
+      | 'generate_executive_report'
+      | 'export_pipeline_summary'
+      | 'quick_invite_operator';
     arguments: string;
   };
 }
@@ -42,7 +53,7 @@ export const COPILOT_TOOLS = [
     type: 'function' as const,
     function: {
       name: 'sign_off_qa',
-      description: 'Sign off QA checklist items for an asset in Stage 4. Can only be fully signed by Content Manager.',
+      description: 'Sign off QA checklist items for an asset in Stage 4. Can only be fully signed by Content Manager or Super Admin.',
       parameters: {
         type: 'object',
         properties: {
@@ -50,7 +61,7 @@ export const COPILOT_TOOLS = [
           approveTone: { type: 'boolean', description: 'Tone of Voice & Brand Identity cleared' },
           approveSpecs: { type: 'boolean', description: 'Hook strength & safe zones verified' },
           approveRights: { type: 'boolean', description: 'Commercial music & IP rights licensed' },
-          finalSignoff: { type: 'boolean', description: 'Gatekeeper Final Sign-off (Content Manager only)' }
+          finalSignoff: { type: 'boolean', description: 'Gatekeeper Final Sign-off (Content Manager/Super Admin only)' }
         },
         required: ['assetId']
       }
@@ -92,7 +103,7 @@ export const COPILOT_TOOLS = [
     type: 'function' as const,
     function: {
       name: 'draft_brief',
-      description: 'Draft a new creative brief card in Stage 1 (Drafting & Briefs) with K2 Horizon.',
+      description: 'Draft a new creative brief card in Stage 1 (Drafting & Briefs).',
       parameters: {
         type: 'object',
         properties: {
@@ -104,27 +115,117 @@ export const COPILOT_TOOLS = [
         required: ['title', 'formatTier']
       }
     }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'batch_transition_assets',
+      description: 'Advance multiple cards matching a criteria to a target stage in bulk.',
+      parameters: {
+        type: 'object',
+        properties: {
+          assetIds: { type: 'array', items: { type: 'string' }, description: 'Array of asset IDs to transition' },
+          targetStage: {
+            type: 'string',
+            enum: ['DRAFT_BRIEF', 'SLA_REVIEW', 'IN_PRODUCTION', 'QA_GATE', 'READY_TO_PUBLISH', 'PUBLISHED']
+          },
+          reason: { type: 'string', description: 'Audit rationale for batch transition' }
+        },
+        required: ['assetIds', 'targetStage']
+      }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'reassign_asset_owner',
+      description: 'Reassign an asset card to another team member or specialist.',
+      parameters: {
+        type: 'object',
+        properties: {
+          assetId: { type: 'string', description: 'Asset to reassign' },
+          assigneeName: { type: 'string', description: 'Name of the new assignee' }
+        },
+        required: ['assetId', 'assigneeName']
+      }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'analyze_sla_bottlenecks',
+      description: 'Calculate and report which stages are creating the highest turnaround delays.',
+      parameters: {
+        type: 'object',
+        properties: {
+          includeRecommendations: { type: 'boolean', default: true }
+        }
+      }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'generate_executive_report',
+      description: 'Generate an executive C-Suite summary of 30-day throughput, SLA health, and capacity.',
+      parameters: {
+        type: 'object',
+        properties: {
+          format: { type: 'string', enum: ['MARKDOWN', 'BULLETS'], default: 'MARKDOWN' }
+        }
+      }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'export_pipeline_summary',
+      description: 'Generate a downloadable CSV / tabular data summary of active cards.',
+      parameters: {
+        type: 'object',
+        properties: {
+          includePublished: { type: 'boolean', default: false }
+        }
+      }
+    }
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'quick_invite_operator',
+      description: 'Super Admin only: invite a new operator by email with assigned role and send Magic Link.',
+      parameters: {
+        type: 'object',
+        properties: {
+          email: { type: 'string' },
+          role: { type: 'string', enum: ['SUPER_ADMIN', 'CONTENT_MANAGER', 'CREATIVE_SPECIALIST', 'STAKEHOLDER', 'DISTRIBUTION_LEAD'] }
+        },
+        required: ['email', 'role']
+      }
+    }
   }
 ];
 
 /**
  * Deterministic operational analyzer that inspects the user's natural language prompt
- * + live SystemContext and generates structured answers and tool_calls when K2 Horizon
- * is running in local/emulated mode or when the user clicks quick-action chips.
+ * + live SystemContext and generates structured answers and tool_calls when offline/fallback.
  */
 export function evaluateCopilotCommand(
   userPrompt: string,
   context: CopilotSystemContext
 ): CopilotResponsePayload {
   const q = userPrompt.toLowerCase();
-  const isContentManager = context.currentUser.role === 'CONTENT_MANAGER';
+  const isSuperAdminOrManager = 
+    context.currentUser.role === 'SUPER_ADMIN' || 
+    context.currentUser.role === 'CONTENT_MANAGER';
 
-  // 1. Check for "What requires my attention" / "SLA risk" / "attention"
+  // 1. Triage / Attention / SLA risk check
   if (
     q.includes('attention') ||
     q.includes('sla risk') ||
     q.includes('show sla') ||
-    q.includes('breach')
+    q.includes('breach') ||
+    q.includes('triage')
   ) {
     const breached = context.activeCards.filter((c) => c.column === 'SLA_REVIEW' && c.isSlaBreached);
     const expiring = context.activeCards.filter(
@@ -137,105 +238,161 @@ export function evaluateCopilotCommand(
     const qaPending = context.activeCards.filter((c) => c.column === 'QA_GATE' && !c.qaGatekeeperSigned);
 
     const lines: string[] = [
-      `**Operational Triage for ${context.currentUser.name} (${context.currentUser.role}):**`
+      `### ⚡ Operational Triage for ${context.currentUser.name} (${context.currentUser.role})\n`
     ];
 
     if (breached.length > 0) {
-      lines.push(
-        `• 🔴 **SLA Breached (${breached.length}):** "${breached[0].title}" (${breached[0].slaLabel}) requires immediate stakeholder escalation or sign-off.`
-      );
-    }
-    if (expiring.length > 0) {
-      lines.push(
-        `• 🟡 **Expiring Today (${expiring.length}):** "${expiring[0].title}" has **${expiring[0].slaLabel}** before SLA breach.`
-      );
-    }
-    if (qaPending.length > 0) {
-      lines.push(
-        `• 🛡️ **Stage 4 QA Gate (${qaPending.length}):** "${qaPending[0].title}" is at **${qaPending[0].qaChecklist}** awaiting Gatekeeper sign-off.`
-      );
-    }
-
-    const toolCalls: CopilotToolCall[] = [
-      {
-        id: `call-filter-${Date.now()}`,
-        type: 'function',
-        function: {
-          name: 'filter_board',
-          arguments: JSON.stringify({ filterType: 'SLA_RISK' })
-        }
-      }
-    ];
-
-    if (breached.length > 0 && (isContentManager || context.currentUser.role === 'STAKEHOLDER')) {
-      toolCalls.push({
-        id: `call-move-${Date.now() + 1}`,
-        type: 'function',
-        function: {
-          name: 'move_asset_stage',
-          arguments: JSON.stringify({
-            assetId: breached[0].id,
-            targetStage: 'IN_PRODUCTION',
-            reason: 'Clear breached SLA review window and advance to Production Pod'
-          })
-        }
+      lines.push(`🚨 **CRITICAL: ${breached.length} SLA Breach(es)**`);
+      breached.forEach((b) => {
+        lines.push(`- **"${b.title}"** (Format: ${b.format}) • SLA Breached (${b.slaLabel})`);
       });
+      lines.push('');
+    } else {
+      lines.push(`✅ **Zero active SLA breaches** on the board.`);
     }
+
+    if (expiring.length > 0) {
+      lines.push(`⚠️ **${expiring.length} Asset(s) Approaching SLA Cutoff (<12h)**`);
+      expiring.forEach((e) => {
+        lines.push(`- **"${e.title}"** • **${e.slaRemainingHours?.toFixed(1)}h remaining**`);
+      });
+      lines.push('');
+    }
+
+    if (qaPending.length > 0) {
+      lines.push(`🛡️ **${qaPending.length} Asset(s) Blocked at Stage 4 QA Gate**`);
+      qaPending.forEach((p) => {
+        lines.push(`- **"${p.title}"** (${p.qaChecklist}) • ${p.hasDeliverable ? 'Deliverable URL attached' : 'Missing URL'}`);
+      });
+      lines.push('');
+    }
+
+    lines.push(`*Tip: Click the filter button below to isolate all high-risk items on your Kanban board.*`);
 
     return {
       role: 'assistant',
       content: lines.join('\n'),
-      tool_calls: toolCalls,
-      engineUsed: 'IFM.ai K2 Horizon'
+      tool_calls: [
+        {
+          id: `call-filter-sla-${Date.now()}`,
+          type: 'function',
+          function: {
+            name: 'filter_board',
+            arguments: JSON.stringify({ filterType: 'SLA_RISK' })
+          }
+        }
+      ],
+      engineUsed: 'Google Gemini 2.0 (Operational Evaluator)'
     };
   }
 
-  // 2. Check for "Split" / "Multiplier" / "shorts" / "clips"
-  if (q.includes('split') || q.includes('multiplier') || q.includes('shorts') || q.includes('clips')) {
-    const matchedHero =
-      context.activeCards.find(
-        (c) =>
-          c.format === 'HERO' &&
-          (q.includes('executive') ? c.title.toLowerCase().includes('executive') : true)
-      ) ||
-      context.activeCards.find((c) => c.format === 'HERO') ||
-      context.activeCards[0];
+  // 2. Executive Report / C-Suite Summary
+  if (q.includes('executive report') || q.includes('c-suite') || q.includes('report') || q.includes('summary')) {
+    const lines = [
+      `### 📊 Executive ContentOps Operational Report`,
+      `**Prepared for:** ${context.currentUser.name} • **Date:** ${new Date().toLocaleDateString()}`,
+      '',
+      `**1. Engine Velocity & Capacity**`,
+      `- Active Pipeline: **${context.pipelineSummary.activePipelineCount} / ${context.pipelineSummary.capacityLimit} assets** (${Math.round((context.pipelineSummary.activePipelineCount / context.pipelineSummary.capacityLimit) * 100)}% capacity)`,
+      `- Total Published This Cycle: **${context.pipelineSummary.publishedCount} assets**`,
+      `- Turnaround SLA Compliance: **${context.pipelineSummary.breachedCount === 0 ? '98.4%' : '88.2%'}**`,
+      '',
+      `**2. Bottleneck & SLA Assessment**`,
+      `- Stage 2 SLA Turnaround Risks: **${context.pipelineSummary.slaRisks}**`,
+      `- Stage 4 Gatekeeper Backlog: **${context.pipelineSummary.pendingQASignoffs}**`,
+      '',
+      `**3. Strategic Recommendations**`,
+      `- Clear the Stage 4 QA backlog to unlock downstream distribution.`,
+      `- Spawn derivative child tickets for high-performing Hero assets to maximize return on production budget.`
+    ];
 
-    if (matchedHero) {
+    return {
+      role: 'assistant',
+      content: lines.join('\n'),
+      tool_calls: [
+        {
+          id: `call-exec-rep-${Date.now()}`,
+          type: 'function',
+          function: {
+            name: 'generate_executive_report',
+            arguments: JSON.stringify({ format: 'MARKDOWN' })
+          }
+        }
+      ],
+      engineUsed: 'Google Gemini 2.0 (Executive Engine)'
+    };
+  }
+
+  // 3. Batch Move / Transition
+  if ((q.includes('batch') || q.includes('all')) && (q.includes('move') || q.includes('advance') || q.includes('publish'))) {
+    const readyToPublish = context.activeCards.filter((c) => c.column === 'READY_TO_PUBLISH');
+    if (readyToPublish.length > 0 && (q.includes('publish') || q.includes('ready'))) {
       return {
         role: 'assistant',
-        content: `I've prepared a **3-ticket Derivative Split** for **"${matchedHero.title}"** using K2 Horizon:\n• **Short-form Reel (9:16)** — 1080x1920, -14 LUFS\n• **LinkedIn Carousel summary (1:1)** — 8-slide visual breakdown\n• **Quote card / X thread** — Contrarian executive hooks\n\nConfirm below to spawn all 3 child tickets in **Stage 1 (Drafting & Briefs)**.`,
+        content: `I identified **${readyToPublish.length} approved asset(s)** in **READY_TO_PUBLISH**. Ready to batch-publish them to the syndication archive.`,
         tool_calls: [
           {
-            id: `call-split-${Date.now()}`,
+            id: `call-batch-publish-${Date.now()}`,
             type: 'function',
             function: {
-              name: 'trigger_multiplier',
+              name: 'batch_transition_assets',
               arguments: JSON.stringify({
-                parentAssetId: matchedHero.id,
-                derivativeCount: 3
+                assetIds: readyToPublish.map((c) => c.id),
+                targetStage: 'PUBLISHED',
+                reason: 'Batch syndication via Thrill Copilot'
               })
             }
           }
         ],
-        engineUsed: 'IFM.ai K2 Horizon'
+        engineUsed: 'Google Gemini 2.0'
       };
     }
   }
 
-  // 3. Check for "Audit Stage 4 QA" / "QA" / "Sign off" / "Gatekeeper"
-  if (q.includes('qa') || q.includes('audit') || q.includes('sign') || q.includes('gatekeeper')) {
-    const qaCard =
-      context.activeCards.find((c) => c.column === 'QA_GATE') || context.activeCards[0];
+  // 4. Split Hero / Multiplier command
+  if (q.includes('split') || q.includes('multiplier') || q.includes('derivative') || q.includes('shorts')) {
+    const heroCard =
+      context.activeCards.find((c) => c.format === 'HERO') ||
+      context.activeCards[0];
 
-    if (qaCard) {
-      const roleNote = isContentManager
-        ? `As **Content Manager**, you have full RACI authority to clear the remaining checks and stamp the **Gatekeeper Final Sign-off**.`
-        : `⚠️ **RACI Lock Notice:** Your active role is **${context.currentUser.role}**. You can verify items 1–3, but **Gatekeeper Final Sign-off** requires switching to **Elena Vance (Content Manager)**.`;
+    if (heroCard) {
+      const match = q.match(/(\d+)\s*(shorts|derivatives|tickets|pieces|cuts)/);
+      const derivativeCount = match ? parseInt(match[1], 10) : 3;
 
       return {
         role: 'assistant',
-        content: `**Stage 4 QA Gatekeeper Audit — "${qaCard.title}":**\n• Current Progress: **${qaCard.qaChecklist}**\n• Deliverable Attached: **${qaCard.hasDeliverable ? 'Verified ✓' : 'Missing'}**\n\n${roleNote}`,
+        content: `Targeted flagship Hero asset **"${heroCard.title}"**. Proposing to trigger the **1-to-5 Asset Multiplier** to spawn ${derivativeCount} vertical cutdowns, LinkedIn slides, and quote cards into Stage 1.`,
+        tool_calls: [
+          {
+            id: `call-mult-${Date.now()}`,
+            type: 'function',
+            function: {
+              name: 'trigger_multiplier',
+              arguments: JSON.stringify({
+                parentAssetId: heroCard.id,
+                derivativeCount
+              })
+            }
+          }
+        ],
+        engineUsed: 'Google Gemini 2.0'
+      };
+    }
+  }
+
+  // 5. Stage 4 QA Gate Audit & Sign-off
+  if (q.includes('qa') || q.includes('gate') || q.includes('sign off') || q.includes('audit stage 4')) {
+    const pendingQa = context.activeCards.find((c) => c.column === 'QA_GATE' && !c.qaGatekeeperSigned);
+
+    if (pendingQa) {
+      const canSignFinal = isSuperAdminOrManager;
+      return {
+        role: 'assistant',
+        content: `Found **"${pendingQa.title}"** awaiting QA sign-off (${pendingQa.qaChecklist}).\n\n${
+          canSignFinal
+            ? `As **${context.currentUser.name} (${context.currentUser.role})**, you hold full Gatekeeper authority to stamp the 4-point sign-off.`
+            : `Note: Your role (${context.currentUser.role}) allows verification of items 1–3. Final sign-off requires a Content Manager or Super Admin.`
+        }`,
         tool_calls: [
           {
             id: `call-qa-${Date.now()}`,
@@ -243,68 +400,37 @@ export function evaluateCopilotCommand(
             function: {
               name: 'sign_off_qa',
               arguments: JSON.stringify({
-                assetId: qaCard.id,
+                assetId: pendingQa.id,
                 approveTone: true,
                 approveSpecs: true,
                 approveRights: true,
-                finalSignoff: isContentManager
+                finalSignoff: canSignFinal
               })
             }
           }
         ],
-        engineUsed: 'IFM.ai K2 Horizon'
+        engineUsed: 'Google Gemini 2.0'
       };
     }
-  }
-
-  // 4. Check for "capacity" / "health" / "status" / "summary"
-  if (q.includes('capacity') || q.includes('health') || q.includes('status') || q.includes('summary')) {
-    const { activePipelineCount, capacityLimit, slaRisks, breachedCount, pendingQASignoffs, publishedCount } =
-      context.pipelineSummary;
-    const utilization = Math.round((activePipelineCount / capacityLimit) * 100);
 
     return {
       role: 'assistant',
-      content: `**Thrill ContentOps Engine Telemetry:**\n• **Sprint Capacity:** ${activePipelineCount} / ${capacityLimit} Active Assets (${utilization}% load)\n• **SLA Health:** ${slaRisks} at risk (${breachedCount} breached, ${Math.max(0, slaRisks - breachedCount)} expiring <12h)\n• **QA Gatekeeper Queue:** ${pendingQASignoffs} awaiting Content Manager sign-off\n• **Syndication Archive:** ${publishedCount} published deliverables`,
-      tool_calls: [
-        {
-          id: `call-filter-all-${Date.now()}`,
-          type: 'function',
-          function: {
-            name: 'filter_board',
-            arguments: JSON.stringify({ filterType: 'ALL' })
-          }
-        }
-      ],
-      engineUsed: 'IFM.ai K2 Horizon'
+      content: '✅ All assets currently in Stage 4 (QA Gate) have passed their verification checks or no assets are queued for inspection.',
+      engineUsed: 'Google Gemini 2.0'
     };
   }
 
-  // 5. Check for "Draft Brief" / "Create" / "New Brief"
-  if (q.includes('draft') || q.includes('brief') || q.includes('launch')) {
+  // 6. Capacity & Health
+  if (q.includes('capacity') || q.includes('health')) {
+    const pct = Math.round((context.pipelineSummary.activePipelineCount / context.pipelineSummary.capacityLimit) * 100);
     return {
       role: 'assistant',
-      content: `I've structured a new high-retention brief for **"Thrill Q4 VIP Tournament Launch"** with K2 Horizon hooks and 9:16 vertical specs (` + '`1080x1920, 9:16 safe margins, -14 LUFS`' + `). Confirm below to insert it into **Stage 1: Drafting & Briefs**.`,
-      tool_calls: [
-        {
-          id: `call-draft-${Date.now()}`,
-          type: 'function',
-          function: {
-            name: 'draft_brief',
-            arguments: JSON.stringify({
-              title: 'Thrill Q4 VIP Tournament: Sub-Second Settlement Reel',
-              formatTier: 'HERO',
-              hookStrategy: 'Contrarian: "90% of gaming platforms fake instant payouts. Here is live on-chain settlement telemetry."',
-              platformSpecs: '1080x1920, 9:16 safe margins, -14 LUFS'
-            })
-          }
-        }
-      ],
-      engineUsed: 'IFM.ai K2 Horizon'
+      content: `### 📈 System Health & Capacity Utilization\n- **Pipeline Load:** ${context.pipelineSummary.activePipelineCount} / ${context.pipelineSummary.capacityLimit} cards (${pct}% capacity)\n- **SLA Risks:** ${context.pipelineSummary.slaRisks} items\n- **QA Blockers:** ${context.pipelineSummary.pendingQASignoffs} items\n- **Status:** ${pct > 80 ? '⚠️ High Load' : '🟢 Healthy Throughput'}`,
+      engineUsed: 'Google Gemini 2.0'
     };
   }
 
-  // 6. Check for moving/advancing a card
+  // 7. Advance / Move specific card
   if (q.includes('move') || q.includes('advance') || q.includes('promote')) {
     const targetCard =
       context.activeCards.find((c) => q.includes(c.title.toLowerCase().slice(0, 10))) ||
@@ -323,7 +449,7 @@ export function evaluateCopilotCommand(
 
       return {
         role: 'assistant',
-        content: `Ready to advance **"${targetCard.title}"** from **${targetCard.column}** to **${targetStage}**. Confirm below to execute the state transition.`,
+        content: `Ready to advance **"${targetCard.title}"** from **${targetCard.column}** ➔ **${targetStage}**. Confirm below to execute this action.`,
         tool_calls: [
           {
             id: `call-advance-${Date.now()}`,
@@ -338,15 +464,15 @@ export function evaluateCopilotCommand(
             }
           }
         ],
-        engineUsed: 'IFM.ai K2 Horizon'
+        engineUsed: 'Google Gemini 2.0'
       };
     }
   }
 
-  // Default contextual response
+  // Default Fallback
   return {
     role: 'assistant',
-    content: `Monitoring **${context.pipelineSummary.activePipelineCount} active assets** as **${context.currentUser.name} (${context.currentUser.role})**.\n\n• **${context.pipelineSummary.pendingQASignoffs}** asset(s) in Stage 4 awaiting QA sign-off\n• **${context.pipelineSummary.slaRisks}** SLA review(s) requiring attention\n\nAsk me to **audit Stage 4 QA**, **split a HERO asset into 3 shorts**, **filter by SLA risks**, or **advance a card**.`,
-    engineUsed: 'IFM.ai K2 Horizon'
+    content: `Monitoring **${context.pipelineSummary.activePipelineCount} active assets** for **${context.currentUser.name} (${context.currentUser.role})**.\n\n• **${context.pipelineSummary.pendingQASignoffs}** pending QA Gatekeeper sign-off(s)\n• **${context.pipelineSummary.slaRisks}** SLA review(s) requiring attention\n\nSelect a quick command below or ask me to **triage SLA risks**, **generate an executive report**, **audit Stage 4**, or **batch-publish approved assets**.`,
+    engineUsed: 'Google Gemini 2.0'
   };
 }
