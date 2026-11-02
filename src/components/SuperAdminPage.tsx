@@ -13,7 +13,8 @@ import {
   Lock,
   Crown,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  BookOpen
 } from 'lucide-react';
 import { User, UserRole } from '../types';
 import { fetchAdminUsers, inviteAdminUser, updateAdminUserRole, deleteAdminUser } from '../lib/apiClient';
@@ -21,6 +22,7 @@ import { fetchAdminUsers, inviteAdminUser, updateAdminUserRole, deleteAdminUser 
 interface SuperAdminPageProps {
   currentUser: User;
   onRefreshUsers?: (users: User[]) => void;
+  onOpenManual?: () => void;
 }
 
 const ROLES_INFO: Array<{
@@ -69,7 +71,8 @@ const ROLES_INFO: Array<{
 
 export const SuperAdminPage: React.FC<SuperAdminPageProps> = ({
   currentUser,
-  onRefreshUsers
+  onRefreshUsers,
+  onOpenManual
 }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -235,6 +238,16 @@ export const SuperAdminPage: React.FC<SuperAdminPageProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5">
+            {currentUser.role === 'SUPER_ADMIN' && onOpenManual && (
+              <button
+                type="button"
+                onClick={onOpenManual}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#121620] hover:bg-[#1E2536] text-[#00E599] border border-[#00E599]/30 font-semibold text-xs transition-colors cursor-pointer shadow-sm"
+              >
+                <BookOpen className="h-4 w-4" />
+                <span>System Manual & Guide</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={loadUsers}

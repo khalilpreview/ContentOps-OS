@@ -13,14 +13,15 @@ import {
   Zap,
   AlertTriangle,
   TrendingUp,
-  Crown
+  Crown,
+  BookOpen
 } from 'lucide-react';
 import { ContentAsset, QuickFilterType, User } from '../types';
 import { isNeedsMySignOffAsset, isSlaRiskAsset, calculateSla } from '../lib/sla';
 
 interface SidebarProps {
-  currentView: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin' | 'topology';
-  onChangeView: (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin' | 'topology') => void;
+  currentView: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin' | 'topology' | 'manual';
+  onChangeView: (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin' | 'topology' | 'manual') => void;
   quickFilter: QuickFilterType;
   onChangeQuickFilter: (filter: QuickFilterType) => void;
   assets: ContentAsset[];
@@ -154,6 +155,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       onClick: () => {
         onChangeQuickFilter('NONE');
         onChangeView('admin');
+      }
+    }] : []),
+    ...(currentUser.role === 'SUPER_ADMIN' ? [{
+      id: 'manual' as const,
+      label: 'System Manual',
+      icon: BookOpen,
+      badgeText: 'GUIDE',
+      badgeColor: 'bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/30',
+      isActive: currentView === 'manual',
+      onClick: () => {
+        onChangeQuickFilter('NONE');
+        onChangeView('manual');
       }
     }] : [])
   ];

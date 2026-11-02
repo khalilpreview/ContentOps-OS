@@ -16,6 +16,7 @@ import { LiveTopologyDashboard } from './components/topology/LiveTopologyDashboa
 import { FloatingCopilot } from './components/copilot/FloatingCopilot';
 import { useCopilotContext } from './hooks/useCopilotContext';
 import { SuperAdminPage } from './components/SuperAdminPage';
+import { SuperAdminManualPage } from './components/SuperAdminManualPage';
 import { AssetStatus, ContentAsset, FormatTier, PillarType, QuickFilterType, User, UserRole } from './types';
 import { DEMO_SEED_ASSETS, INITIAL_ASSETS, SEED_USERS } from './lib/seedData';
 import { validateStatusTransition } from './lib/stateMachine';
@@ -57,16 +58,39 @@ export default function App() {
   const [, setIsSupabaseSyncing] = useState<boolean>(false);
 
   // Session guard: authenticate if a valid session exists in storage, otherwise show auth modal
+  const initialUrlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isDemoOrBypass = initialUrlParams?.get('demo') === 'true' || initialUrlParams?.get('auth') === 'bypass';
+
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    if (isDemoOrBypass) return true;
     return Boolean(initialStorage.authSession?.user);
   });
   const [showAuthModal, setShowAuthModal] = useState<boolean>(() => {
+    if (isDemoOrBypass) return false;
     return !initialStorage.authSession?.user;
   });
 
   const [allUsers, setAllUsers] = useState<User[]>(SEED_USERS);
-  const [currentUser, setCurrentUser] = useState<User>(initialStorage.currentUser);
-  const [assets, setAssets] = useState<ContentAsset[]>(initialStorage.assets);
+  const [currentUser, setCurrentUser] = useState<User>(() => {
+    if (isDemoOrBypass) {
+      return {
+        id: 'u-superadmin-primary',
+        name: 'Super Administrator',
+        email: 'previewsites40@gmail.com',
+        role: 'SUPER_ADMIN',
+        avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+        department: 'Executive Governance Pod',
+        team: 'Executive Governance Pod'
+      };
+    }
+    return initialStorage.currentUser;
+  });
+  const [assets, setAssets] = useState<ContentAsset[]>(() => {
+    if (isDemoOrBypass && initialStorage.assets.length === 0) {
+      return DEMO_SEED_ASSETS;
+    }
+    return initialStorage.assets;
+  });
 
   // Synchronize telemetry user context with active authenticated user
   useEffect(() => {
@@ -153,14 +177,40 @@ export default function App() {
     };
   }, [supabaseConfig.isConfigured]);
 
+  // Parse optional initial URL params for automated testing, documentation, or deep links
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const initialViewParam = urlParams?.get('view') as any;
+  const initialModalParam = urlParams?.get('modal');
+  const demoParam = urlParams?.get('demo') === 'true';
+
   // Modals & Drawers
-  const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<ContentAsset | null>(null);
-  const [selectedAssetForQa, setSelectedAssetForQa] = useState<ContentAsset | null>(null);
-  const [selectedAssetForMultiplier, setSelectedAssetForMultiplier] = useState<ContentAsset | null>(null);
-  const [isNewAssetOpen, setIsNewAssetOpen] = useState(false);
-  const [isAiConfigOpen, setIsAiConfigOpen] = useState(false);
-  const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
-  const [isBootLoading, setIsBootLoading] = useState<boolean>(true);
+  const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<ContentAsset | null>(() => {
+    if (initialModalParam === 'detail') {
+      return DEMO_SEED_ASSETS[0] || null;
+    }
+    return null;
+  });
+  const [selectedAssetForQa, setSelectedAssetForQa] = useState<ContentAsset | null>(() => {
+    if (initialModalParam === 'qa') {
+      return DEMO_SEED_ASSETS.find((a) => a.status === 'QA_GATE') || DEMO_SEED_ASSETS[0] || null;
+    }
+    return null;
+  });
+  const [selectedAssetForMultiplier, setSelectedAssetForMultiplier] = useState<ContentAsset | null>(() => {
+    if (initialModalParam === 'multiplier') {
+      return DEMO_SEED_ASSETS.find((a) => a.formatTier === 'HERO') || DEMO_SEED_ASSETS[0] || null;
+    }
+    return null;
+  });
+  const [isNewAssetOpen, setIsNewAssetOpen] = useState(() => initialModalParam === 'new');
+  const [isAiConfigOpen, setIsAiConfigOpen] = useState(() => initialModalParam === 'settings');
+  const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(() => initialModalParam === 'shortcuts');
+  const [isBootLoading, setIsBootLoading] = useState<boolean>(() => {
+    if (urlParams?.get('skipLoading') === 'true' || urlParams?.get('view') || urlParams?.get('modal')) {
+      return false;
+    }
+    return true;
+  });
   const [loaderMode, setLoaderMode] = useState<'auto' | 'preview'>('auto');
 
   // Guard Block modal state
@@ -170,20 +220,36 @@ export default function App() {
     sourceStatus?: AssetStatus;
     targetStatus?: AssetStatus;
     asset?: ContentAsset;
-  }>({
-    isOpen: false,
-    reason: ''
+  }>(() => {
+    if (initialModalParam === 'guard') {
+      return {
+        isOpen: true,
+        reason: 'RACI VETO BLOCK: Stage 4 (QA_GATE) cannot transition to READY_TO_PUBLISH without complete 4-point verification check sign-off.',
+        sourceStatus: 'QA_GATE',
+        targetStatus: 'READY_TO_PUBLISH',
+        asset: DEMO_SEED_ASSETS.find((a) => a.status === 'QA_GATE') || DEMO_SEED_ASSETS[0]
+      };
+    }
+    return {
+      isOpen: false,
+      reason: ''
+    };
   });
 
   // Filters & Views
-  const [currentView, setCurrentView] = useState<'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin' | 'topology'>('pipeline');
+  const [currentView, setCurrentView] = useState<'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin' | 'topology' | 'manual'>(() => {
+    if (['pipeline', 'sla', 'multiplier', 'archive', 'dashboard', 'admin', 'topology', 'manual'].includes(initialViewParam)) {
+      return initialViewParam;
+    }
+    return 'pipeline';
+  });
   const [selectedTier, setSelectedTier] = useState<FormatTier | 'ALL'>('ALL');
   const [selectedPillar, setSelectedPillar] = useState<PillarType | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterOnlySla, setFilterOnlySla] = useState(false);
   const [quickFilter, setQuickFilter] = useState<QuickFilterType>('NONE');
 
-  const handleChangeView = (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin' | 'topology') => {
+  const handleChangeView = (view: 'pipeline' | 'sla' | 'multiplier' | 'archive' | 'dashboard' | 'admin' | 'topology' | 'manual') => {
     setCurrentView(view);
     if (view === 'sla') {
       setFilterOnlySla(true);
@@ -195,7 +261,7 @@ export default function App() {
       } else {
         setIsNewAssetOpen(true);
       }
-    } else if (view === 'dashboard' || view === 'archive' || view === 'admin' || view === 'topology') {
+    } else if (view === 'dashboard' || view === 'archive' || view === 'admin' || view === 'topology' || view === 'manual') {
       setFilterOnlySla(false);
     } else {
       setFilterOnlySla(false);
@@ -876,9 +942,15 @@ export default function App() {
           />
 
           <main className="flex-1 flex flex-col min-h-0 overflow-y-auto bg-[#0B0E14]">
-            {currentView === 'admin' ? (
+            {currentView === 'manual' ? (
+              <SuperAdminManualPage
+                currentUser={currentUser}
+                onNavigateToView={handleChangeView}
+              />
+            ) : currentView === 'admin' ? (
               <SuperAdminPage
                 currentUser={currentUser}
+                onOpenManual={() => handleChangeView('manual')}
                 onRefreshUsers={(fetchedUsers) => {
                   setAllUsers((prev) => {
                     const merged = [...prev];
