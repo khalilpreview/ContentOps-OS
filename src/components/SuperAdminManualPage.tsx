@@ -19,7 +19,13 @@ import {
   Lightbulb,
   ExternalLink,
   Search,
-  ArrowRight
+  ArrowRight,
+  HelpCircle,
+  FileText,
+  Flame,
+  Award,
+  AlertTriangle,
+  Play
 } from 'lucide-react';
 import { User } from '../types';
 
@@ -617,6 +623,7 @@ export const SuperAdminManualPage: React.FC<SuperAdminManualPageProps> = ({
   currentUser,
   onNavigateToView
 }) => {
+  const [activeTab, setActiveTab] = useState<'visual-manual' | 'executive-pitch'>('executive-pitch');
   const [activeSectionId, setActiveSectionId] = useState<string>(MANUAL_SECTIONS[0].id);
   const [searchFilter, setSearchFilter] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -659,41 +666,60 @@ export const SuperAdminManualPage: React.FC<SuperAdminManualPageProps> = ({
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-[#0B0E14] text-white">
-      {/* Top Banner Header */}
-      <header className="px-6 py-5 border-b border-white/[0.08] bg-[#121620]/80 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-20">
+      {/* Top Banner Header with Mode Switcher */}
+      <header className="px-6 py-4 border-b border-white/[0.08] bg-[#121620]/90 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-[#00E599]/20 to-[#00E599]/5 border border-[#00E599]/30 flex items-center justify-center text-[#00E599] shadow-[0_0_20px_rgba(0,229,153,0.15)]">
             <BookOpen className="h-6 w-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-white">Super Admin Interactive System Manual</h1>
+              <h1 className="text-xl font-bold tracking-tight text-white">Super Admin Operating Manual &amp; Playbook</h1>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FF4B55]/15 text-[#FF4B55] border border-[#FF4B55]/30">
                 Confidential • Super Admin Only
               </span>
             </div>
             <p className="text-xs text-[#8F9CAE]">
-              Complete visual guide with real screenshots, 5-year-old friendly analogies, and pro tips for every form, modal, and card.
+              Comprehensive system blueprint, stakeholder pitch deck, and visual component breakdown.
             </p>
           </div>
         </div>
 
-        {/* Search Bar & Fast Navigation */}
+        {/* Tab Mode Toggle + Pipeline Jump */}
         <div className="flex items-center gap-3">
-          <div className="relative w-64">
-            <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#8F9CAE]" />
-            <input
-              type="text"
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              placeholder="Search forms, modals, rules..."
-              className="w-full bg-[#181E2C] border border-white/[0.08] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-[#8F9CAE] focus:outline-none focus:border-[#00E599]/50 transition-colors"
-            />
+          {/* Main Mode Switcher */}
+          <div className="flex items-center p-1 bg-[#181E2C] border border-white/[0.08] rounded-xl">
+            <button
+              type="button"
+              onClick={() => setActiveTab('executive-pitch')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === 'executive-pitch'
+                  ? 'bg-[#00E599] text-[#0B0E14] shadow-sm font-bold'
+                  : 'text-[#8F9CAE] hover:text-white'
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Executive Pitch &amp; Walkthrough</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('visual-manual')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === 'visual-manual'
+                  ? 'bg-[#00E599] text-[#0B0E14] shadow-sm font-bold'
+                  : 'text-[#8F9CAE] hover:text-white'
+              }`}
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span>Visual Component Manual (14 Views)</span>
+            </button>
           </div>
+
           {onNavigateToView && (
             <button
               onClick={() => onNavigateToView('pipeline')}
-              className="px-3 py-1.5 rounded-xl bg-[#00E599] text-[#0B0E14] text-xs font-bold hover:bg-[#00cc88] transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0"
+              className="px-3 py-1.5 rounded-xl bg-[#181E2C] hover:bg-[#1E2536] text-white border border-white/[0.08] text-xs font-semibold hover:border-[#00E599]/40 transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0"
             >
               <span>Back to Pipeline</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -702,251 +728,504 @@ export const SuperAdminManualPage: React.FC<SuperAdminManualPageProps> = ({
         </div>
       </header>
 
-      {/* Main Content Layout: Left Nav Column + Right Interactive Manual Studio */}
-      <div className="flex-1 flex min-h-0 overflow-hidden">
-        {/* Left Sticky Navigation Column */}
-        <aside className="w-80 border-r border-white/[0.08] bg-[#121620]/40 overflow-y-auto p-4 space-y-2 shrink-0">
-          <div className="px-2 py-1 text-[11px] font-bold text-[#8F9CAE] uppercase tracking-wider">
-            All Dashboard Components ({filteredSections.length})
-          </div>
-
-          <div className="space-y-1">
-            {filteredSections.map((sec, idx) => {
-              const IconComp = sec.icon;
-              const isSelected = sec.id === activeSection.id;
-              return (
-                <button
-                  key={sec.id}
-                  onClick={() => setActiveSectionId(sec.id)}
-                  className={`w-full text-left p-3 rounded-xl transition-all cursor-pointer flex items-start gap-3 border ${
-                    isSelected
-                      ? 'bg-[#181E2C] border-[#00E599]/40 text-white shadow-[0_0_15px_rgba(0,229,153,0.08)]'
-                      : 'bg-transparent border-transparent text-[#8F9CAE] hover:text-white hover:bg-white/[0.03]'
-                  }`}
-                >
-                  <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${
-                    isSelected ? 'bg-[#00E599]/15 text-[#00E599]' : 'bg-[#181E2C] text-[#8F9CAE]'
-                  }`}>
-                    <IconComp className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1 mb-0.5">
-                      <span className={`text-[10px] font-black tracking-wider uppercase ${
-                        isSelected ? 'text-[#00E599]' : 'text-[#8F9CAE]'
-                      }`}>
-                        {sec.badge}
-                      </span>
-                      <span className="text-[10px] text-white/30 font-mono">#{String(idx + 1).padStart(2, '0')}</span>
-                    </div>
-                    <div className="text-xs font-semibold truncate text-white">{sec.title}</div>
-                    <div className="text-[11px] text-[#8F9CAE] truncate mt-0.5">{sec.subtitle}</div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Quick FAQ Accordion in Sidebar */}
-          <div className="pt-6 border-t border-white/[0.08] mt-6 space-y-3">
-            <div className="px-2 text-[11px] font-bold text-[#8F9CAE] uppercase tracking-wider">
-              Super Admin FAQ
-            </div>
-
-            <div className="space-y-2">
-              {[
-                {
-                  q: 'Who can bypass the QA Gate?',
-                  a: 'Strictly Super Admins (previewsites40@gmail.com) and Content Managers who hold the master 4-point signing authority.'
-                },
-                {
-                  q: 'What happens when an SLA breaches?',
-                  a: 'The countdown badge turns pulsing red, alarms sound if enabled in settings, and an automated audit record is written to PostgreSQL.'
-                },
-                {
-                  q: 'How does Supabase Magic Link work?',
-                  a: 'Users receive an encrypted login token via email that signs them directly into their account with no password to remember or lose.'
-                }
-              ].map((faq, i) => (
-                <div key={i} className="bg-[#181E2C]/80 border border-white/[0.06] rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
-                    className="w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between text-white hover:text-[#00E599] transition-colors cursor-pointer"
-                  >
-                    <span>{faq.q}</span>
-                    <ChevronDown className={`h-3.5 w-3.5 text-[#8F9CAE] transition-transform ${expandedFaq === i ? 'rotate-180' : ''}`} />
-                  </button>
-                  {expandedFaq === i && (
-                    <div className="px-3 pb-3 pt-1 text-[11px] text-[#8F9CAE] leading-relaxed border-t border-white/5">
-                      {faq.a}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
-
-        {/* Right Detail Pane: The Live Manual Page */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8">
-          {/* Header of Active Section */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/30">
-                {activeSection.badge}
+      {/* TAB 1: EXECUTIVE PITCH & REAL-WORLD WALKTHROUGH */}
+      {activeTab === 'executive-pitch' && (
+        <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-10 max-w-5xl mx-auto w-full">
+          {/* Hero Welcome Card */}
+          <div className="bg-gradient-to-br from-[#181E2C] to-[#121620] border border-[#00E599]/30 rounded-3xl p-8 relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-[#00E599]/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="flex items-center gap-2 mb-3">
+              <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/30">
+                The Master Playbook
               </span>
-              <span className="text-xs text-[#8F9CAE] font-medium">• Dashboard Component Guide</span>
+              <span className="text-xs text-[#8F9CAE]">For Executives, Investors, and Team Leads</span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
-              {activeSection.title}
+
+            <h2 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight leading-tight max-w-3xl">
+              How to Explain <span className="text-[#00E599]">Thrill ContentOps OS</span> to Anyone
             </h2>
-            <p className="text-sm text-[#8F9CAE] max-w-3xl leading-relaxed">
-              {activeSection.subtitle}
+            <p className="text-sm text-[#8F9CAE] max-w-2xl mt-2 leading-relaxed">
+              Use this clear, compelling guide to communicate the value, architecture, and ROI of our high-velocity content engine in under 3 minutes.
             </p>
           </div>
 
-          {/* High-Resolution Screenshot Showcase */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs text-[#8F9CAE] px-1">
-              <span className="font-semibold text-white flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-[#00E599]" />
-                Actual System Visual (Captured from Live Production UI)
-              </span>
-              <span className="font-mono text-[11px] text-white/40">{activeSection.image.replace('/manual-assets/', '')}</span>
+          {/* Part 1: The Big Picture */}
+          <section className="bg-[#121620] border border-white/[0.08] rounded-2xl p-6 md:p-8 space-y-4">
+            <div className="flex items-center gap-2.5 text-[#00E599]">
+              <Flame className="h-5 w-5" />
+              <span className="text-xs font-black uppercase tracking-widest">Part 1</span>
+            </div>
+            <h3 className="text-2xl font-bold text-white tracking-tight">The Big Picture (Explain Like I’m 5)</h3>
+            
+            <div className="p-4 rounded-xl bg-[#181E2C] border border-[#00E599]/20 text-white font-medium text-sm leading-relaxed">
+              Think of <strong className="text-[#00E599]">Thrill ContentOps OS</strong> as <strong className="text-white">"Air Traffic Control" for the marketing team.</strong>
             </div>
 
-            <div className="rounded-2xl border border-white/[0.12] bg-[#121620] overflow-hidden shadow-2xl relative group">
-              <img
-                src={activeSection.image}
-                alt={activeSection.title}
-                className="w-full h-auto object-cover max-h-[540px] transition-transform duration-500 group-hover:scale-[1.01]"
-              />
-              <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
-            </div>
-          </div>
+            <p className="text-xs md:text-sm text-[#8F9CAE] leading-relaxed">
+              Right now, in most companies, marketing is managed through a chaotic mess of Slack messages, scattered Google Docs, random WhatsApp groups, and lost Dropbox links:
+            </p>
 
-          {/* 5-Year-Old Explanation Card (The Hero Metaphor) */}
-          <div className="bg-gradient-to-br from-[#181E2C] to-[#121620] border border-[#00E599]/20 rounded-2xl p-6 relative overflow-hidden shadow-lg">
-            <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#00E599]/5 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="flex items-start gap-4">
-              <div className="h-12 w-12 rounded-xl bg-[#00E599]/15 border border-[#00E599]/30 flex items-center justify-center text-[#00E599] shrink-0">
-                <Lightbulb className="h-6 w-6" />
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    How it works in super simple words (5-Year-Old Explanation)
-                  </h3>
-                  <p className="text-xs text-[#00E599] font-medium">Simple, clear, and impossible to forget</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              {[
+                { title: 'Unclear Ownership', desc: 'Nobody knows who is supposed to approve what.' },
+                { title: 'The Review Black Hole', desc: 'Ideas sit in executives’ inboxes for weeks and die.' },
+                { title: 'Technical Spec Confusion', desc: 'Video editors do not know the exact format or safe zones needed.' },
+                { title: 'Legal & Brand Hazards', desc: 'Content gets posted with mistakes, wrong logos, or copyrighted music.' }
+              ].map((item, i) => (
+                <div key={i} className="p-3.5 rounded-xl bg-[#0B0E14] border border-white/[0.06] flex items-start gap-3 text-xs">
+                  <span className="text-[#FF4B55] font-bold text-sm leading-none mt-0.5">•</span>
+                  <div>
+                    <strong className="text-white block mb-0.5">{item.title}</strong>
+                    <span className="text-[#8F9CAE]">{item.desc}</span>
+                  </div>
                 </div>
+              ))}
+            </div>
 
-                <p className="text-sm text-white/90 leading-relaxed font-normal">
-                  "{activeSection.fiveYearOldSummary}"
-                </p>
+            <p className="text-xs md:text-sm text-white/90 leading-relaxed pt-2">
+              <strong className="text-[#00E599]">Thrill ContentOps OS replaces that chaos with a smart, automated assembly line.</strong> It tracks every video, graphic, and campaign from the initial idea all the way to publication, using AI to do the heavy lifting and strict digital locks to prevent mistakes.
+            </p>
+          </section>
 
-                <div className="pt-2 flex items-center gap-2 text-xs text-[#8F9CAE] bg-[#0B0E14]/60 p-3 rounded-xl border border-white/5">
-                  <span className="font-bold text-amber-400 shrink-0">💡 Real-Life Comparison:</span>
-                  <span>{activeSection.realWorldAnalogy}</span>
+          {/* Part 2: The 3 Big Problems This Solves */}
+          <section className="bg-[#121620] border border-white/[0.08] rounded-2xl p-6 md:p-8 space-y-6">
+            <div className="flex items-center gap-2.5 text-[#00E599]">
+              <ShieldCheck className="h-5 w-5" />
+              <span className="text-xs font-black uppercase tracking-widest">Part 2</span>
+            </div>
+            <h3 className="text-2xl font-bold text-white tracking-tight">The 3 Big Problems This Solves</h3>
+
+            <div className="space-y-4">
+              {[
+                {
+                  number: '01',
+                  problemTitle: 'The Review Black Hole',
+                  problemDesc: 'You write a brief for an important video, send it to a VP, and they forget to look at it for 10 days. The campaign is delayed.',
+                  solutionTitle: 'The 48-Hour SLA Clock',
+                  solutionDesc: 'The moment a brief is sent for review, a visible countdown timer starts (e.g., "36 hours left"). If they don’t review it, it turns yellow, then flashing red, keeping everyone accountable.'
+                },
+                {
+                  number: '02',
+                  problemTitle: 'The Brand Disaster',
+                  problemDesc: 'A freelancer makes a video with copyrighted music or off-brand colors, and someone accidentally posts it.',
+                  solutionTitle: 'The QA Gatekeeper',
+                  solutionDesc: 'A strict digital lock. The system physically prevents anyone from publishing an asset until the Content Manager checks 4 mandatory boxes (Tone, Specs, Rights, Final Sign-off).'
+                },
+                {
+                  number: '03',
+                  problemTitle: 'The "One and Done" Waste',
+                  problemDesc: 'A company spends $20,000 on a 1-hour live stream or event, posts it once on YouTube, and forgets about it.',
+                  solutionTitle: 'The Asset Multiplier Engine',
+                  solutionDesc: 'With one click, the system breaks a big 1-hour video into 5 short TikToks, 2 Instagram carousels, and 3 quote cards. One effort turns into 10 pieces of content.'
+                }
+              ].map((card, i) => (
+                <div key={i} className="bg-[#181E2C] border border-white/[0.07] rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4 relative overflow-hidden">
+                  <div className="space-y-1.5 border-b md:border-b-0 md:border-r border-white/10 pb-3 md:pb-0 md:pr-4">
+                    <span className="text-[10px] font-mono font-bold text-[#FF4B55] uppercase tracking-wider">
+                      Problem #{card.number}
+                    </span>
+                    <h4 className="text-sm font-bold text-white">{card.problemTitle}</h4>
+                    <p className="text-xs text-[#8F9CAE] leading-relaxed">{card.problemDesc}</p>
+                  </div>
+                  <div className="space-y-1.5 md:pl-2">
+                    <span className="text-[10px] font-mono font-bold text-[#00E599] uppercase tracking-wider">
+                      Thrill OS Solution
+                    </span>
+                    <h4 className="text-sm font-bold text-[#00E599]">{card.solutionTitle}</h4>
+                    <p className="text-xs text-white/90 leading-relaxed">{card.solutionDesc}</p>
+                  </div>
                 </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Part 3: Real World Walkthrough */}
+          <section className="bg-[#121620] border border-white/[0.08] rounded-2xl p-6 md:p-8 space-y-6">
+            <div className="flex items-center gap-2.5 text-[#00E599]">
+              <Play className="h-5 w-5" />
+              <span className="text-xs font-black uppercase tracking-widest">Part 3</span>
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-white tracking-tight">A Real-World Example (Step-by-Step)</h3>
+              <p className="text-xs text-[#8F9CAE] mt-1">Let’s trace a real campaign from start to finish so people can see exactly how it works.</p>
+            </div>
+
+            {/* Scenario Banner */}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-[#181E2C] to-[#1E2536] border border-[#00E599]/30 flex items-center gap-3">
+              <Award className="h-6 w-6 text-[#00E599] shrink-0" />
+              <div>
+                <span className="text-[10px] uppercase font-mono font-bold text-[#00E599] tracking-wider block">Real Scenario</span>
+                <span className="text-sm font-bold text-white">"The $1,000,000 Thrill Poker Invitational (Live Stream)"</span>
               </div>
             </div>
-          </div>
 
-          {/* Visual Walkthrough: Every Single Button & Form Field Explained */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Info className="h-5 w-5 text-[#00E599]" />
-              What Every Single Button, Form & Indicator Does
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {activeSection.visualWalkthrough.map((item, i) => (
-                <div key={i} className="bg-[#121620] border border-white/[0.08] rounded-xl p-4 space-y-2 hover:border-white/20 transition-colors">
+            {/* Steps Timeline */}
+            <div className="space-y-4">
+              {[
+                {
+                  step: 'Step 1: The Idea & Intake (No More Vague Requests)',
+                  whatHappens: 'The Marketing Lead wants to promote the event. Instead of sending a messy Slack message like "Hey, make some hype videos for poker," they create a ticket in the system.',
+                  systemAction: 'The system categorizes it as a "HERO" asset (a major tentpole event) and checks if the team has enough capacity to take it on without burning out.'
+                },
+                {
+                  step: 'Step 2: The Creative Brief + AI (Instant Strategy)',
+                  whatHappens: 'Usually, writing a creative brief takes hours of research. Here, the manager pastes raw notes and clicks [✨ AI Auto-Brief with K2 Horizon / Gemini].',
+                  systemAction: 'In 3 seconds, the built-in AI generates: 3 Viral Hooks (Curiosity, Contrarian, Direct Value), Technical Specs (9:16 vertical video, 1080x1920, audio normalized, safe zone cleared), and Target KPI benchmark (65% 3s retention).'
+                },
+                {
+                  step: 'Step 3: The 48-Hour SLA Gateway (No More Bottlenecks)',
+                  whatHappens: 'The brief moves to Stage 2: Stakeholder Review.',
+                  systemAction: 'A 48-hour countdown timer begins. The stakeholder gets notified. If 36 hours pass without approval, the card turns amber. At 48 hours, it alerts the team. Everyone knows who is holding up the project. Once approved, the timer stops.'
+                },
+                {
+                  step: 'Step 4: The Production Pod (Creatives Do What They Do Best)',
+                  whatHappens: 'The brief automatically moves to Stage 3: Production Pod and gets assigned to Marcus (Video Editor).',
+                  systemAction: 'Marcus doesn’t have to guess what to do. He opens the ticket and sees the exact approved hook, the script, the dimensions, and the deadline. When finished, he attaches his video link directly to the ticket.'
+                },
+                {
+                  step: 'Step 5: The QA Gatekeeper (The Digital Lock)',
+                  whatHappens: 'Marcus submits the video. It moves to Stage 4: QA Gatekeeper.',
+                  systemAction: 'The Content Manager opens the In-App Media Inspector. She checks Tone, Visual Specs, and Rights. The Lock: Marcus (the editor) cannot mark this ready to publish. Only the manager holds the digital key. Once verified, Stage 5 unlocks.'
+                },
+                {
+                  step: 'Step 6: The Asset Multiplier (1 Video Becomes 5)',
+                  whatHappens: 'The 1-hour Poker Live Stream is finished. Instead of stopping there, the manager clicks [Split to Derivatives].',
+                  systemAction: 'The system automatically spawns 4 new child tickets: The best bluff clip (Short-form video), Celebrity winner reaction (Instagram Reel), 5 rules of tournament poker (Carousel slides). The team gets 4x more content with zero extra planning meetings.'
+                },
+                {
+                  step: 'Step 7: The Distribution & Paid Ads Loop (Closing the Circle)',
+                  whatHappens: 'The social media team posts the clip on TikTok and Twitter.',
+                  systemAction: 'Two weeks later, the system detects an 82% retention rate. It flags it as 🏆 Winning Format. With one click, the manager promotes this creative directly to the Paid Growth Team.'
+                }
+              ].map((st, i) => (
+                <div key={i} className="p-4 rounded-xl bg-[#181E2C] border border-white/[0.06] space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="h-6 w-6 rounded-md bg-[#181E2C] border border-white/10 text-white font-mono text-xs flex items-center justify-center shrink-0">
+                    <span className="h-6 w-6 rounded-md bg-[#00E599]/15 text-[#00E599] text-xs font-mono font-bold flex items-center justify-center shrink-0">
                       {i + 1}
                     </span>
-                    <h4 className="text-xs font-bold text-white">{item.target}</h4>
+                    <h4 className="text-xs font-bold text-white">{st.step}</h4>
                   </div>
-                  <p className="text-xs text-[#8F9CAE] leading-relaxed">
-                    {item.description}
-                  </p>
-                  <div className="text-[11px] text-[#00E599] bg-[#00E599]/5 border border-[#00E599]/20 p-2 rounded-lg font-medium">
-                    <span className="font-bold">How to use: </span>{item.howToUse}
+                  <div className="text-xs text-[#8F9CAE] pl-8 space-y-1">
+                    <div><strong className="text-white">What happens: </strong>{st.whatHappens}</div>
+                    <div className="text-[#00E599] bg-[#00E599]/5 p-2 rounded-lg border border-[#00E599]/20">
+                      <strong className="text-white">System Action: </strong>{st.systemAction}
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
 
-          {/* Step-by-Step Operator Action Plan */}
-          <div className="bg-[#121620] border border-white/[0.08] rounded-2xl p-6 space-y-4">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-[#00E599]" />
-              Step-by-Step Operator Instructions
-            </h3>
+          {/* Part 4: Meet Thrill Copilot */}
+          <section className="bg-[#121620] border border-white/[0.08] rounded-2xl p-6 md:p-8 space-y-4">
+            <div className="flex items-center gap-2.5 text-[#00E599]">
+              <Zap className="h-5 w-5" />
+              <span className="text-xs font-black uppercase tracking-widest">Part 4</span>
+            </div>
+            <h3 className="text-2xl font-bold text-white tracking-tight">Meet "Thrill Copilot" (The AI Assistant)</h3>
+            
+            <p className="text-xs md:text-sm text-[#8F9CAE] leading-relaxed">
+              In the bottom corner of the screen is a floating, glowing assistant called <strong className="text-white">Thrill Copilot</strong>. Unlike generic chat tools that know nothing about your company, Thrill Copilot inspects the live database in real time:
+            </p>
 
-            <div className="space-y-2.5">
-              {activeSection.stepByStepAction.map((step, idx) => (
-                <div key={idx} className="flex items-start gap-3 text-xs text-[#8F9CAE]">
-                  <span className="h-5 w-5 rounded-full bg-[#00E599]/15 text-[#00E599] font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
-                    {idx + 1}
-                  </span>
-                  <span className="leading-relaxed text-white/90">{step}</span>
+            <div className="space-y-2.5 pt-1">
+              {[
+                {
+                  ask: 'You ask: "What is stuck right now?"',
+                  answer: 'Copilot answers: "There is 1 brief expiring in 4 hours, and 1 video waiting for your Stage 4 QA sign-off."'
+                },
+                {
+                  ask: 'You command: "Move the Poker video to Stage 5"',
+                  answer: 'Copilot verifies your RACI role permissions, checks the mandatory boxes, and advances the card for you.'
+                },
+                {
+                  ask: 'You brainstorm: "Give me 3 angles to promote our weekend tournament"',
+                  answer: 'Copilot drafts structured briefs aligned with Thrill’s exact tone of voice and technical aspect safe zones.'
+                }
+              ].map((cp, idx) => (
+                <div key={idx} className="p-3.5 rounded-xl bg-[#181E2C] border border-white/[0.06] text-xs space-y-1">
+                  <div className="font-semibold text-white">{cp.ask}</div>
+                  <div className="text-[#00E599] pl-2 border-l-2 border-[#00E599]">{cp.answer}</div>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
 
-          {/* Super Admin Secret Pro Tips */}
-          <div className="bg-[#181E2C] border border-amber-500/30 rounded-2xl p-6 space-y-3 relative overflow-hidden">
+          {/* Part 5: The 30-Second Elevator Pitch */}
+          <section className="bg-gradient-to-br from-[#181E2C] to-[#121620] border border-amber-500/30 rounded-2xl p-6 md:p-8 space-y-4 relative overflow-hidden">
             <div className="flex items-center gap-2 text-amber-400">
-              <Crown className="h-5 w-5" />
-              <h3 className="text-sm font-bold uppercase tracking-wider">Super Admin Executive Secrets & Pro Tips</h3>
+              <Award className="h-5 w-5" />
+              <span className="text-xs font-black uppercase tracking-widest">Part 5</span>
+            </div>
+            <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">The 30-Second Summary (Your Executive Cheat Sheet)</h3>
+            
+            <p className="text-xs text-[#8F9CAE]">If an executive, partner, or investor asks: <em>"Give me the pitch in 30 seconds,"</em> say this:</p>
+
+            <blockquote className="p-4 rounded-xl bg-[#0B0E14]/80 border border-amber-500/30 text-white text-xs md:text-sm leading-relaxed italic space-y-2">
+              <p>
+                "Thrill ContentOps OS is our internal operating system for all marketing content. It does three things:
+              </p>
+              <ul className="list-disc pl-5 space-y-1 not-italic text-xs md:text-sm">
+                <li><strong className="text-white">1. Eliminates bottlenecks</strong> using strict 48-hour countdowns so ideas never get stuck in review.</li>
+                <li><strong className="text-white">2. Guarantees brand safety</strong> through a digital QA lock so unapproved content can physically never be published.</li>
+                <li><strong className="text-white">3. Acts as a content multiplier</strong>, using built-in AI to turn raw notes into instant briefs and slice major events into dozens of viral micro-assets.</li>
+              </ul>
+              <p className="text-[#00E599] font-semibold pt-1">
+                It turns content production from a slow, chaotic mess into a predictable, high-velocity machine."
+              </p>
+            </blockquote>
+          </section>
+        </div>
+      )}
+
+      {/* TAB 2: VISUAL COMPONENT MANUAL */}
+      {activeTab === 'visual-manual' && (
+        <div className="flex-1 flex min-h-0 overflow-hidden">
+          {/* Left Sticky Navigation Column */}
+          <aside className="w-80 border-r border-white/[0.08] bg-[#121620]/40 overflow-y-auto p-4 space-y-2 shrink-0">
+            <div className="px-2 py-1 text-[11px] font-bold text-[#8F9CAE] uppercase tracking-wider">
+              All Dashboard Components ({filteredSections.length})
             </div>
 
-            <ul className="space-y-2">
-              {activeSection.secretAdminProTips.map((tip, i) => (
-                <li key={i} className="text-xs text-amber-200/90 flex items-start gap-2 leading-relaxed">
-                  <span className="text-amber-400 font-bold">•</span>
-                  <span>{tip}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+            <div className="space-y-1">
+              {filteredSections.map((sec, idx) => {
+                const IconComp = sec.icon;
+                const isSelected = sec.id === activeSection.id;
+                return (
+                  <button
+                    key={sec.id}
+                    onClick={() => setActiveSectionId(sec.id)}
+                    className={`w-full text-left p-3 rounded-xl transition-all cursor-pointer flex items-start gap-3 border ${
+                      isSelected
+                        ? 'bg-[#181E2C] border-[#00E599]/40 text-white shadow-[0_0_15px_rgba(0,229,153,0.08)]'
+                        : 'bg-transparent border-transparent text-[#8F9CAE] hover:text-white hover:bg-white/[0.03]'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${
+                      isSelected ? 'bg-[#00E599]/15 text-[#00E599]' : 'bg-[#181E2C] text-[#8F9CAE]'
+                    }`}>
+                      <IconComp className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                        <span className={`text-[10px] font-black tracking-wider uppercase ${
+                          isSelected ? 'text-[#00E599]' : 'text-[#8F9CAE]'
+                        }`}>
+                          {sec.badge}
+                        </span>
+                        <span className="text-[10px] text-white/30 font-mono">#{String(idx + 1).padStart(2, '0')}</span>
+                      </div>
+                      <div className="text-xs font-semibold truncate text-white">{sec.title}</div>
+                      <div className="text-[11px] text-[#8F9CAE] truncate mt-0.5">{sec.subtitle}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
 
-          {/* Next Section Switcher Footer */}
-          <div className="pt-6 border-t border-white/[0.08] flex items-center justify-between">
-            {(() => {
-              const curIdx = MANUAL_SECTIONS.findIndex((s) => s.id === activeSection.id);
-              const prev = curIdx > 0 ? MANUAL_SECTIONS[curIdx - 1] : null;
-              const next = curIdx < MANUAL_SECTIONS.length - 1 ? MANUAL_SECTIONS[curIdx + 1] : null;
+            {/* Quick FAQ Accordion in Sidebar */}
+            <div className="pt-6 border-t border-white/[0.08] mt-6 space-y-3">
+              <div className="px-2 text-[11px] font-bold text-[#8F9CAE] uppercase tracking-wider">
+                Super Admin FAQ
+              </div>
 
-              return (
-                <>
-                  {prev ? (
+              <div className="space-y-2">
+                {[
+                  {
+                    q: 'Who can bypass the QA Gate?',
+                    a: 'Strictly Super Admins (previewsites40@gmail.com) and Content Managers who hold the master 4-point signing authority.'
+                  },
+                  {
+                    q: 'What happens when an SLA breaches?',
+                    a: 'The countdown badge turns pulsing red, alarms sound if enabled in settings, and an automated audit record is written to PostgreSQL.'
+                  },
+                  {
+                    q: 'How does Supabase Magic Link work?',
+                    a: 'Users receive an encrypted login token via email that signs them directly into their account with no password to remember or lose.'
+                  }
+                ].map((faq, i) => (
+                  <div key={i} className="bg-[#181E2C]/80 border border-white/[0.06] rounded-xl overflow-hidden">
                     <button
-                      onClick={() => setActiveSectionId(prev.id)}
-                      className="px-4 py-2 rounded-xl bg-[#181E2C] border border-white/[0.08] text-xs font-semibold text-white hover:border-[#00E599]/40 transition-colors flex items-center gap-2 cursor-pointer"
+                      onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
+                      className="w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between text-white hover:text-[#00E599] transition-colors cursor-pointer"
                     >
-                      <span>← Previous: {prev.title}</span>
+                      <span>{faq.q}</span>
+                      <ChevronDown className={`h-3.5 w-3.5 text-[#8F9CAE] transition-transform ${expandedFaq === i ? 'rotate-180' : ''}`} />
                     </button>
-                  ) : <div />}
+                    {expandedFaq === i && (
+                      <div className="px-3 pb-3 pt-1 text-[11px] text-[#8F9CAE] leading-relaxed border-t border-white/5">
+                        {faq.a}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </aside>
 
-                  {next ? (
-                    <button
-                      onClick={() => setActiveSectionId(next.id)}
-                      className="px-4 py-2 rounded-xl bg-[#00E599] text-[#0B0E14] text-xs font-bold hover:bg-[#00cc88] transition-colors flex items-center gap-2 cursor-pointer shadow-md"
-                    >
-                      <span>Next: {next.title} →</span>
-                    </button>
-                  ) : <div />}
-                </>
-              );
-            })()}
-          </div>
-        </main>
-      </div>
+          {/* Right Detail Pane: The Live Manual Page */}
+          <main className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8">
+            {/* Header of Active Section */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-[#00E599]/15 text-[#00E599] border border-[#00E599]/30">
+                  {activeSection.badge}
+                </span>
+                <span className="text-xs text-[#8F9CAE] font-medium">• Dashboard Component Guide</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
+                {activeSection.title}
+              </h2>
+              <p className="text-sm text-[#8F9CAE] max-w-3xl leading-relaxed">
+                {activeSection.subtitle}
+              </p>
+            </div>
+
+            {/* High-Resolution Screenshot Showcase */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs text-[#8F9CAE] px-1">
+                <span className="font-semibold text-white flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4 text-[#00E599]" />
+                  Actual System Visual (Captured from Live Production UI)
+                </span>
+                <span className="font-mono text-[11px] text-white/40">{activeSection.image.replace('/manual-assets/', '')}</span>
+              </div>
+
+              <div className="rounded-2xl border border-white/[0.12] bg-[#121620] overflow-hidden shadow-2xl relative group">
+                <img
+                  src={activeSection.image}
+                  alt={activeSection.title}
+                  className="w-full h-auto object-cover max-h-[540px] transition-transform duration-500 group-hover:scale-[1.01]"
+                />
+                <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
+              </div>
+            </div>
+
+            {/* 5-Year-Old Explanation Card */}
+            <div className="bg-gradient-to-br from-[#181E2C] to-[#121620] border border-[#00E599]/20 rounded-2xl p-6 relative overflow-hidden shadow-lg">
+              <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#00E599]/5 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 rounded-xl bg-[#00E599]/15 border border-[#00E599]/30 flex items-center justify-center text-[#00E599] shrink-0">
+                  <Lightbulb className="h-6 w-6" />
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      How it works in super simple words (5-Year-Old Explanation)
+                    </h3>
+                    <p className="text-xs text-[#00E599] font-medium">Simple, clear, and impossible to forget</p>
+                  </div>
+
+                  <p className="text-sm text-white/90 leading-relaxed font-normal">
+                    "{activeSection.fiveYearOldSummary}"
+                  </p>
+
+                  <div className="pt-2 flex items-center gap-2 text-xs text-[#8F9CAE] bg-[#0B0E14]/60 p-3 rounded-xl border border-white/5">
+                    <span className="font-bold text-amber-400 shrink-0">💡 Real-Life Comparison:</span>
+                    <span>{activeSection.realWorldAnalogy}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Visual Walkthrough: Every Single Button & Form Field Explained */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Info className="h-5 w-5 text-[#00E599]" />
+                What Every Single Button, Form &amp; Indicator Does
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {activeSection.visualWalkthrough.map((item, i) => (
+                  <div key={i} className="bg-[#121620] border border-white/[0.08] rounded-xl p-4 space-y-2 hover:border-white/20 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <span className="h-6 w-6 rounded-md bg-[#181E2C] border border-white/10 text-white font-mono text-xs flex items-center justify-center shrink-0">
+                        {i + 1}
+                      </span>
+                      <h4 className="text-xs font-bold text-white">{item.target}</h4>
+                    </div>
+                    <p className="text-xs text-[#8F9CAE] leading-relaxed">
+                      {item.description}
+                    </p>
+                    <div className="text-[11px] text-[#00E599] bg-[#00E599]/5 border border-[#00E599]/20 p-2 rounded-lg font-medium">
+                      <span className="font-bold">How to use: </span>{item.howToUse}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Step-by-Step Operator Action Plan */}
+            <div className="bg-[#121620] border border-white/[0.08] rounded-2xl p-6 space-y-4">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-[#00E599]" />
+                Step-by-Step Operator Instructions
+              </h3>
+
+              <div className="space-y-2.5">
+                {activeSection.stepByStepAction.map((step, idx) => (
+                  <div key={idx} className="flex items-start gap-3 text-xs text-[#8F9CAE]">
+                    <span className="h-5 w-5 rounded-full bg-[#00E599]/15 text-[#00E599] font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                      {idx + 1}
+                    </span>
+                    <span className="leading-relaxed text-white/90">{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Super Admin Secret Pro Tips */}
+            <div className="bg-[#181E2C] border border-amber-500/30 rounded-2xl p-6 space-y-3 relative overflow-hidden">
+              <div className="flex items-center gap-2 text-amber-400">
+                <Crown className="h-5 w-5" />
+                <h3 className="text-sm font-bold uppercase tracking-wider">Super Admin Executive Secrets &amp; Pro Tips</h3>
+              </div>
+
+              <ul className="space-y-2">
+                {activeSection.secretAdminProTips.map((tip, i) => (
+                  <li key={i} className="text-xs text-amber-200/90 flex items-start gap-2 leading-relaxed">
+                    <span className="text-amber-400 font-bold">•</span>
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Next Section Switcher Footer */}
+            <div className="pt-6 border-t border-white/[0.08] flex items-center justify-between">
+              {(() => {
+                const curIdx = MANUAL_SECTIONS.findIndex((s) => s.id === activeSection.id);
+                const prev = curIdx > 0 ? MANUAL_SECTIONS[curIdx - 1] : null;
+                const next = curIdx < MANUAL_SECTIONS.length - 1 ? MANUAL_SECTIONS[curIdx + 1] : null;
+
+                return (
+                  <>
+                    {prev ? (
+                      <button
+                        onClick={() => setActiveSectionId(prev.id)}
+                        className="px-4 py-2 rounded-xl bg-[#181E2C] border border-white/[0.08] text-xs font-semibold text-white hover:border-[#00E599]/40 transition-colors flex items-center gap-2 cursor-pointer"
+                      >
+                        <span>← Previous: {prev.title}</span>
+                      </button>
+                    ) : <div />}
+
+                    {next ? (
+                      <button
+                        onClick={() => setActiveSectionId(next.id)}
+                        className="px-4 py-2 rounded-xl bg-[#00E599] text-[#0B0E14] text-xs font-bold hover:bg-[#00cc88] transition-colors flex items-center gap-2 cursor-pointer shadow-md"
+                      >
+                        <span>Next: {next.title} →</span>
+                      </button>
+                    ) : <div />}
+                  </>
+                );
+              })()}
+            </div>
+          </main>
+        </div>
+      )}
     </div>
   );
 };

@@ -264,7 +264,7 @@ export const FloatingCopilot: React.FC<FloatingCopilotProps> = ({
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end select-none">
+    <div className="fixed bottom-10 right-6 z-50 flex flex-col items-end select-none">
       {/* Expandable Glassmorphism Chat Drawer */}
       {isOpen && (
         <div
