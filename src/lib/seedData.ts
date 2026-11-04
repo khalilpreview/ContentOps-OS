@@ -2,6 +2,24 @@ import { ContentAsset, User } from '../types';
 
 export const SEED_USERS: User[] = [
   {
+    id: 'u-superadmin-primary',
+    name: 'Super Administrator',
+    email: 'previewsites40@gmail.com',
+    role: 'SUPER_ADMIN',
+    avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+    department: 'Executive Governance & Administration Pod',
+    team: 'Executive Governance Pod'
+  },
+  {
+    id: 'u-superadmin-yanling',
+    name: 'Yanling Lin',
+    email: 'yanling.lin@pradym.io',
+    role: 'SUPER_ADMIN',
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    department: 'Executive Governance & Architecture Pod',
+    team: 'Executive Governance Pod'
+  },
+  {
     id: 'u-cm',
     name: 'Elena Vance',
     email: 'elena.vance@enterprise.io',

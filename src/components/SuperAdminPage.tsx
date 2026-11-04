@@ -16,8 +16,8 @@ import {
   Sparkles,
   BookOpen
 } from 'lucide-react';
-import { User, UserRole } from '../types';
 import { fetchAdminUsers, inviteAdminUser, updateAdminUserRole, deleteAdminUser } from '../lib/apiClient';
+import { SEED_USERS } from '../lib/seedData';
 
 interface SuperAdminPageProps {
   currentUser: User;
@@ -74,8 +74,14 @@ export const SuperAdminPage: React.FC<SuperAdminPageProps> = ({
   onRefreshUsers,
   onOpenManual
 }) => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [users, setUsers] = useState<User[]>(() => {
+    const list = [...SEED_USERS];
+    if (currentUser?.email && !list.some((u) => u.email.toLowerCase() === currentUser.email.toLowerCase())) {
+      list.unshift(currentUser);
+    }
+    return list;
+  });
+  const [isLoading, setIsLoading] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -93,11 +99,21 @@ export const SuperAdminPage: React.FC<SuperAdminPageProps> = ({
     try {
       const data = await fetchAdminUsers();
       if (data && data.length > 0) {
-        setUsers(data);
-        onRefreshUsers?.(data);
+        const merged = [...data];
+        SEED_USERS.forEach((su) => {
+          if (!merged.some((m) => m.id === su.id || m.email.toLowerCase() === su.email.toLowerCase())) {
+            merged.push(su);
+          }
+        });
+        setUsers(merged);
+        onRefreshUsers?.(merged);
+      } else {
+        setUsers(SEED_USERS);
+        onRefreshUsers?.(SEED_USERS);
       }
     } catch (err: any) {
       console.warn('Could not load users:', err);
+      setUsers(SEED_USERS);
     } finally {
       setIsLoading(false);
     }

@@ -2,8 +2,14 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import OpenAI from 'openai';
+import ws from 'ws';
 import { COPILOT_TOOLS, evaluateCopilotCommand } from './src/lib/ai/tools';
 import { buildCopilotSystemPrompt } from './src/lib/ai/copilotClient';
+
+// Polyfill global WebSocket for Node runtimes < 22 and Supabase realtime client
+if (typeof (globalThis as any).WebSocket === 'undefined') {
+  (globalThis as any).WebSocket = ws;
+}
 
 async function startServer() {
   const app = express();

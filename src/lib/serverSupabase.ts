@@ -1,4 +1,10 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import ws from 'ws';
+
+// Ensure globalThis.WebSocket is available for Node environments < 22
+if (typeof (globalThis as any).WebSocket === 'undefined') {
+  (globalThis as any).WebSocket = ws;
+}
 
 let _serverSupabaseClient: SupabaseClient | null = null;
 
@@ -18,6 +24,9 @@ export function getServerSupabaseClient(): SupabaseClient {
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false
+    },
+    realtime: {
+      transport: ws as any
     }
   });
 

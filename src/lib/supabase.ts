@@ -90,13 +90,28 @@ export function getSupabaseClient(): SupabaseClient {
   if (_cachedClient) return _cachedClient;
 
   const config = getSupabaseConfig();
-  _cachedClient = createClient(config.url, config.anonKey, {
+  const clientOptions: any = {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true
     }
-  });
+  };
+
+  // If running in a Node-like environment without native WebSocket, guard realtime
+  if (typeof window === 'undefined' && typeof (globalThis as any).WebSocket === 'undefined') {
+    try {
+      // Dynamic require if available in Node runtime
+      const wsModule = typeof require === 'function' ? require('ws') : null;
+      if (wsModule) {
+        clientOptions.realtime = { transport: wsModule };
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  _cachedClient = createClient(config.url, config.anonKey, clientOptions);
 
   return _cachedClient;
 }

@@ -210,6 +210,9 @@ export function getUserById(identifier: string): User | null {
  * Return all registered/synced users from Supabase or fallback store
  */
 export async function getAllUsers(): Promise<User[]> {
+  const seen = new Set<string>();
+  const users: User[] = [];
+
   const config = getServerSupabaseConfig();
   if (config.isConfigured) {
     try {
@@ -220,32 +223,42 @@ export async function getAllUsers(): Promise<User[]> {
         .order('created_at', { ascending: false });
 
       if (!error && data && data.length > 0) {
-        return data.map((d: any) => ({
-          id: d.id,
-          name: d.name || d.email?.split('@')[0] || 'Operator',
-          email: d.email || '',
-          role: d.role as UserRole,
-          avatarUrl: d.avatar_url,
-          team: d.team,
-          status: d.status || 'active',
-          invitedAt: d.invited_at,
-          invitedBy: d.invited_by,
-        }));
+        data.forEach((d: any) => {
+          const email = (d.email || '').trim().toLowerCase();
+          const isSuperAdmin = DESIGNATED_SUPER_ADMINS.includes(email);
+          const resolvedRole: UserRole = isSuperAdmin ? 'SUPER_ADMIN' : (d.role as UserRole);
+
+          seen.add(d.id);
+          if (email) seen.add(email);
+
+          users.push({
+            id: d.id,
+            name: d.name || d.email?.split('@')[0] || 'Operator',
+            email: d.email || '',
+            role: resolvedRole,
+            avatarUrl: d.avatar_url,
+            team: d.team,
+            status: d.status || 'active',
+            invitedAt: d.invited_at,
+            invitedBy: d.invited_by,
+          });
+        });
       }
     } catch (err) {
       console.warn('getAllUsers Supabase error:', err);
     }
   }
 
-  // Deduplicate fallback store
-  const seen = new Set<string>();
-  const users: User[] = [];
+  // Ensure all fallback/seed users (especially designated Super Admins) are represented
   fallbackUserStore.forEach((u) => {
-    if (!seen.has(u.id)) {
+    const emailKey = u.email ? u.email.toLowerCase() : '';
+    if (!seen.has(u.id) && (!emailKey || !seen.has(emailKey))) {
       seen.add(u.id);
+      if (emailKey) seen.add(emailKey);
       users.push(u);
     }
   });
+
   return users;
 }
 

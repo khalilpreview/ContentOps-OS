@@ -21,17 +21,33 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
     // Session retrieval error fallback
   }
 
-  // Fallback to active impersonated user in localStorage
-  const activeUser = localStorage.getItem('thrill_active_user');
-  if (activeUser) {
-    try {
+  // Fallback to active impersonated or logged-in user in localStorage
+  try {
+    const authSessionRaw = localStorage.getItem('contentops_auth_session');
+    if (authSessionRaw) {
+      const parsedSession = JSON.parse(authSessionRaw);
+      if (parsedSession?.user?.id) {
+        headers['x-dev-user-id'] = parsedSession.user.id;
+        return headers;
+      }
+    }
+
+    const activeUserId = localStorage.getItem('contentops_active_user');
+    if (activeUserId && typeof activeUserId === 'string' && activeUserId.trim()) {
+      headers['x-dev-user-id'] = activeUserId.trim();
+      return headers;
+    }
+
+    const activeUser = localStorage.getItem('thrill_active_user');
+    if (activeUser) {
       const parsed = JSON.parse(activeUser);
       if (parsed.id) {
         headers['x-dev-user-id'] = parsed.id;
+        return headers;
       }
-    } catch {
-      // ignore
     }
+  } catch {
+    // ignore
   }
 
   return headers;
