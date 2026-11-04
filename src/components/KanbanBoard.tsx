@@ -46,7 +46,6 @@ interface KanbanBoardProps {
   onOpenNewAsset?: () => void;
   onOpenDashboard?: () => void;
   onOpenTopology?: () => void;
-  onLoadDemoData?: () => void;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -69,8 +68,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onChangeQuickFilter,
   onOpenNewAsset,
   onOpenDashboard,
-  onOpenTopology,
-  onLoadDemoData
+  onOpenTopology
 }) => {
   const [draggedAsset, setDraggedAsset] = useState<ContentAsset | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<AssetStatus | null>(null);
@@ -192,7 +190,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   // Compute live actionable status bar metrics
-  const firstName = currentUser.name.split(' ')[0] || 'Elena';
+  const firstName = currentUser.name.split(' ')[0] || 'Operator';
   const awaitingSignOffCount = assets.filter((a) => a.status === 'QA_GATE' && !a.qaGatekeeperSigned).length;
   const expiringTodayCount = assets.filter((a) => {
     if (a.status !== 'SLA_REVIEW') return false;
@@ -700,16 +698,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2.5 shrink-0 w-full md:w-auto">
-            {onLoadDemoData && (
-              <button
-                type="button"
-                onClick={onLoadDemoData}
-                className="flex-1 md:flex-none px-3.5 py-2 rounded-xl bg-[#181E2C] hover:bg-[#202738] border border-white/10 text-xs font-semibold text-[#8F9CAE] hover:text-white transition-colors cursor-pointer"
-                title="Populate sample workflow templates to inspect RACI states"
-              >
-                Load Demo Templates
-              </button>
-            )}
             {onOpenNewAsset && (
               <button
                 type="button"

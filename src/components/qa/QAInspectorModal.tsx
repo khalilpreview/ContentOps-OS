@@ -60,25 +60,6 @@ interface QAInspectorModalProps {
   onOpenGeneralStudio?: (asset: ContentAsset) => void;
 }
 
-// Fallback demo assets for interactive testing
-const DEMO_PRESETS = [
-  {
-    name: '9:16 Vertical Video (Demo Reel)',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    type: 'video'
-  },
-  {
-    name: '16:9 4K Studio Cut (MP4)',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    type: 'video'
-  },
-  {
-    name: 'High-Res Keyframe Poster (Image)',
-    url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1600&auto=format&fit=crop&q=80',
-    type: 'image'
-  }
-];
-
 export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
   asset,
   currentUser,
@@ -88,9 +69,9 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
   onTransitionAsset,
   onOpenGeneralStudio
 }) => {
-  // Local state for active deliverable URL (allows switching between asset URL and test presets)
+  // Local state for active deliverable URL
   const [activeMediaUrl, setActiveMediaUrl] = useState<string>(() => {
-    return asset.deliverableUrl || DEMO_PRESETS[0].url;
+    return asset.deliverableUrl || '';
   });
 
   // Safe zones overlay toggle (TikTok & Instagram Reels overlay guidelines)
@@ -124,15 +105,15 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
 
   // Assigned creative
   const assignee = allUsers.find((u) => u.id === asset.assignedToId) || {
-    id: 'u-cs',
-    name: 'Marcus Vance',
+    id: asset.assignedToId || 'unassigned',
+    name: 'Assigned Creative Specialist',
     role: 'CREATIVE_SPECIALIST' as const,
-    email: 'marcus@thrill.ai'
+    email: 'specialist@thrill.ai'
   };
 
   // Detect whether active media is video or image
-  const isVideo = isVideoDeliverable(activeMediaUrl);
-  const isImage = isImageDeliverable(activeMediaUrl);
+  const isVideo = Boolean(activeMediaUrl && isVideoDeliverable(activeMediaUrl));
+  const isImage = Boolean(activeMediaUrl && (isImageDeliverable(activeMediaUrl) || !isVideo));
 
   // Evaluate QA Gatekeeper sign-off eligibility
   const signOffCheck = canSignOffQa(asset, currentUser);
@@ -603,29 +584,18 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
                   <span>Deliverable Preview:</span>
                 </span>
 
-                {/* Media Preset Quick Selector */}
-                <div className="hidden sm:flex items-center gap-1.5">
-                  {DEMO_PRESETS.map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => {
-                        setActiveMediaUrl(preset.url);
-                        if (preset.type === 'video' && videoRef.current) {
-                          videoRef.current.load();
-                          setIsPlaying(false);
-                        }
-                      }}
-                      className={`text-[11px] px-2.5 py-1 rounded-md font-mono transition-colors ${
-                        activeMediaUrl === preset.url
-                          ? 'bg-[#00E599]/20 text-[#00E599] border border-[#00E599]/40'
-                          : 'bg-white/5 hover:bg-white/10 text-[#8F9CAE] border border-white/5'
-                      }`}
-                    >
-                      {preset.name.split(' ')[0]}
-                    </button>
-                  ))}
-                </div>
+                {/* Deliverable media status badge */}
+                {activeMediaUrl ? (
+                  <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#00E599]/15 border border-[#00E599]/30 text-[11px] font-mono text-[#00E599]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#00E599]" />
+                    <span className="truncate max-w-[240px]">{activeMediaUrl}</span>
+                  </div>
+                ) : (
+                  <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#F5A524]/15 border border-[#F5A524]/30 text-[11px] font-mono text-[#F5A524]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#F5A524] animate-pulse" />
+                    <span>No Deliverable Attached</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -675,8 +645,49 @@ export const QAInspectorModal: React.FC<QAInspectorModalProps> = ({
               className="flex-1 min-h-0 bg-[#080A0F] flex items-center justify-center p-3 sm:p-6 overflow-hidden relative select-none"
             >
               
-              {/* VIDEO PLAYER RENDER */}
-              {isVideo ? (
+              {/* NO MEDIA EMPTY STATE */}
+              {!activeMediaUrl ? (
+                <div className="text-center p-8 bg-[#121620] border border-white/10 rounded-2xl max-w-md shadow-2xl space-y-3">
+                  <div className="w-12 h-12 rounded-xl bg-[#00E599]/10 border border-[#00E599]/30 text-[#00E599] flex items-center justify-center mx-auto">
+                    <Film className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-white font-bold text-sm">No Deliverable Media Attached</h4>
+                  <p className="text-xs text-[#8F9CAE]">
+                    Attach a production deliverable URL (MP4, WebM, or image master) to perform 4-point QA inspection and mobile safe-zone audits.
+                  </p>
+                  <div className="pt-2 flex items-center gap-2">
+                    <input
+                      type="url"
+                      placeholder="https://... (Deliverable URL)"
+                      defaultValue={asset.deliverableUrl || ''}
+                      id="qa-deliverable-input"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const val = (e.currentTarget as HTMLInputElement).value.trim();
+                          if (val) {
+                            setActiveMediaUrl(val);
+                            onUpdateAsset({ ...asset, deliverableUrl: val });
+                          }
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 rounded-lg bg-[#0B0E14] border border-white/15 text-xs text-white placeholder-[#8F9CAE] focus:outline-none focus:border-[#00E599]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById('qa-deliverable-input') as HTMLInputElement | null;
+                        if (el && el.value.trim()) {
+                          setActiveMediaUrl(el.value.trim());
+                          onUpdateAsset({ ...asset, deliverableUrl: el.value.trim() });
+                        }
+                      }}
+                      className="px-3.5 py-2 rounded-lg bg-[#00E599] hover:bg-[#00c985] text-black font-semibold text-xs transition-colors cursor-pointer shrink-0"
+                    >
+                      Attach
+                    </button>
+                  </div>
+                </div>
+              ) : isVideo ? (
                 <div
                   className={`relative flex items-center justify-center transition-all ${
                     framingMode === 'phone'

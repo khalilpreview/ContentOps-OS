@@ -31,23 +31,23 @@ export interface SettingsModalProps {
 
 const AVATAR_PRESETS = [
   {
-    name: 'Elena (Content Manager)',
+    name: 'Content Manager',
     url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
   },
   {
-    name: 'Marcus (Creative Specialist)',
+    name: 'Creative Specialist',
     url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
   },
   {
-    name: 'Sarah (Brand Stakeholder)',
+    name: 'Brand Stakeholder',
     url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80'
   },
   {
-    name: 'Devon (Distribution Lead)',
+    name: 'Distribution Lead',
     url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
   },
   {
-    name: 'Alex (Executive Lead)',
+    name: 'Super Administrator',
     url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
   }
 ];
@@ -113,13 +113,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [activeTab, setActiveTab] = useState<'profile' | 'engine'>(initialTab);
 
   // Profile Form State
-  const [name, setName] = useState(currentUser?.name || 'Elena Vance');
-  const [email, setEmail] = useState(currentUser?.email || 'elena.vance@enterprise.io');
+  const [name, setName] = useState(currentUser?.name || '');
+  const [email, setEmail] = useState(currentUser?.email || '');
   const [avatarUrl, setAvatarUrl] = useState(
     currentUser?.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
   );
   const [role, setRole] = useState<UserRole>(currentUser?.role || 'CONTENT_MANAGER');
-  const [team, setTeam] = useState(currentUser?.team || currentUser?.department || 'Executive ContentOps Pod');
+  const [team, setTeam] = useState(currentUser?.team || currentUser?.department || 'Production Pod');
 
   // Status & Feedback
   const [isSyncing, setIsSyncing] = useState(false);
@@ -352,7 +352,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    placeholder="e.g., Elena Vance"
+                    placeholder="Full Name (e.g. Sarah Connor)"
                     className="w-full bg-[#181E2C] border border-white/[0.08] focus:border-[#00E599] rounded-lg px-3 py-2 text-white focus:outline-none transition-colors"
                   />
                 </div>
@@ -366,7 +366,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    placeholder="elena.vance@enterprise.io"
+                    placeholder="operator@company.com"
                     className="w-full bg-[#181E2C] border border-white/[0.08] focus:border-[#00E599] rounded-lg px-3 py-2 text-white focus:outline-none transition-colors font-mono text-[11px]"
                   />
                 </div>
@@ -581,12 +581,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </button>
             </div>
 
-            {/* Reset Demo Data */}
+            {/* Clear Local Pipeline Cache */}
             <div className="pt-4 mt-2 border-t border-white/[0.07] flex items-center justify-between">
               <div>
-                <span className="font-semibold text-white block">Reset Pipeline Data</span>
+                <span className="font-semibold text-white block">Clear Local Pipeline Cache</span>
                 <span className="text-[11px] text-[#8F9CAE]">
-                  Restores original 8 active assets + 1 archived asset across all stages
+                  Purges browser-cached asset state to clean production baseline
                 </span>
               </div>
               <button
@@ -598,7 +598,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#FF4B55]/15 hover:bg-[#FF4B55]/25 border border-[#FF4B55]/40 text-[#FF4B55] flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
-                <span>Reset Data</span>
+                <span>Clear Cache</span>
               </button>
             </div>
           </div>

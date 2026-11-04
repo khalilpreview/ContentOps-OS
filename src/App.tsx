@@ -86,9 +86,6 @@ export default function App() {
     return initialStorage.currentUser;
   });
   const [assets, setAssets] = useState<ContentAsset[]>(() => {
-    if (isDemoOrBypass && initialStorage.assets.length === 0) {
-      return DEMO_SEED_ASSETS;
-    }
     return initialStorage.assets;
   });
 
@@ -186,19 +183,19 @@ export default function App() {
   // Modals & Drawers
   const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<ContentAsset | null>(() => {
     if (initialModalParam === 'detail') {
-      return DEMO_SEED_ASSETS[0] || null;
+      return initialStorage.assets[0] || null;
     }
     return null;
   });
   const [selectedAssetForQa, setSelectedAssetForQa] = useState<ContentAsset | null>(() => {
     if (initialModalParam === 'qa') {
-      return DEMO_SEED_ASSETS.find((a) => a.status === 'QA_GATE') || DEMO_SEED_ASSETS[0] || null;
+      return initialStorage.assets.find((a) => a.status === 'QA_GATE') || initialStorage.assets[0] || null;
     }
     return null;
   });
   const [selectedAssetForMultiplier, setSelectedAssetForMultiplier] = useState<ContentAsset | null>(() => {
     if (initialModalParam === 'multiplier') {
-      return DEMO_SEED_ASSETS.find((a) => a.formatTier === 'HERO') || DEMO_SEED_ASSETS[0] || null;
+      return initialStorage.assets.find((a) => a.formatTier === 'HERO') || initialStorage.assets[0] || null;
     }
     return null;
   });
@@ -221,13 +218,14 @@ export default function App() {
     targetStatus?: AssetStatus;
     asset?: ContentAsset;
   }>(() => {
-    if (initialModalParam === 'guard') {
+    if (initialModalParam === 'guard' && initialStorage.assets.length > 0) {
+      const target = initialStorage.assets.find((a) => a.status === 'QA_GATE') || initialStorage.assets[0];
       return {
         isOpen: true,
         reason: 'RACI VETO BLOCK: Stage 4 (QA_GATE) cannot transition to READY_TO_PUBLISH without complete 4-point verification check sign-off.',
         sourceStatus: 'QA_GATE',
         targetStatus: 'READY_TO_PUBLISH',
-        asset: DEMO_SEED_ASSETS.find((a) => a.status === 'QA_GATE') || DEMO_SEED_ASSETS[0]
+        asset: target
       };
     }
     return {
@@ -974,6 +972,7 @@ export default function App() {
               <LiveTopologyDashboard
                 assets={assets}
                 currentUser={currentUser}
+                allUsers={allUsers}
                 onNavigateToKanban={() => handleChangeView('pipeline')}
                 onOpenAssetDetail={(asset) => {
                   if (asset.status === 'QA_GATE') {
@@ -1012,7 +1011,6 @@ export default function App() {
                 onOpenNewAsset={() => setIsNewAssetOpen(true)}
                 onOpenDashboard={() => handleChangeView('dashboard')}
                 onOpenTopology={() => handleChangeView('topology')}
-                onLoadDemoData={handleLoadDemoData}
               />
             )}
           </main>

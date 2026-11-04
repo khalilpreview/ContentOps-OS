@@ -20,6 +20,7 @@ import { ContentAsset, User } from '../../types';
 interface HubSpokeViewProps {
   assets: ContentAsset[];
   currentUser: User;
+  allUsers?: User[];
   onOpenAssetDetail: (asset: ContentAsset) => void;
 }
 
@@ -37,9 +38,21 @@ interface SpokePod {
 
 export const HubSpokeView: React.FC<HubSpokeViewProps> = ({
   assets,
+  currentUser,
+  allUsers = [],
   onOpenAssetDetail
 }) => {
   const [selectedPodId, setSelectedPodId] = useState<string | null>(null);
+
+  // Dynamic Content Operations Lead resolution
+  const cmUser = allUsers.find(
+    (u) => u.role === 'CONTENT_MANAGER' || u.role === 'SUPER_ADMIN'
+  ) || (currentUser.role === 'CONTENT_MANAGER' || currentUser.role === 'SUPER_ADMIN' ? currentUser : null);
+
+  const conductorName = cmUser?.name || currentUser?.name || 'Content Operations Lead';
+  const conductorRole = cmUser?.role === 'SUPER_ADMIN' 
+    ? 'Super Admin • Operations Lead' 
+    : 'Content Manager • System Gatekeeper';
 
   // Center Conductor Node coordinates
   const centerX = 500;
@@ -200,7 +213,7 @@ export const HubSpokeView: React.FC<HubSpokeViewProps> = ({
               </span>
             </div>
             <p className="text-xs text-[#8F9CAE]">
-              Content Manager Elena Vance sits at the nexus, connecting upstream strategic mandates with creative studio execution and syndication
+              Content Operations Lead ({conductorName}) sits at the nexus, connecting upstream strategic mandates with creative studio execution and syndication
             </p>
           </div>
         </div>
@@ -408,7 +421,7 @@ export const HubSpokeView: React.FC<HubSpokeViewProps> = ({
                 fontFamily="sans-serif"
                 fontWeight="bold"
               >
-                Elena Vance
+                {conductorName}
               </text>
 
               <text
@@ -419,7 +432,7 @@ export const HubSpokeView: React.FC<HubSpokeViewProps> = ({
                 fontSize="9.5"
                 fontFamily="sans-serif"
               >
-                Content Manager • System Gatekeeper
+                {conductorRole}
               </text>
 
               <text

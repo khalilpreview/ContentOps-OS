@@ -19,6 +19,7 @@ import { ContentAsset, User, UserRole } from '../../types';
 interface RaciConduitViewProps {
   assets: ContentAsset[];
   currentUser: User;
+  allUsers?: User[];
   onOpenAssetDetail: (asset: ContentAsset) => void;
 }
 
@@ -37,80 +38,103 @@ interface RaciChamber {
   isGatekeeperLock?: boolean;
 }
 
-const RACI_CHAMBERS: RaciChamber[] = [
-  {
-    stageNumber: 1,
-    id: 'strategy_briefing',
-    name: 'Strategy & Briefing',
-    accountableRole: 'CONTENT_MANAGER',
-    accountableLabel: 'Elena Vance (Content Manager)',
-    responsibleRoles: ['CONTENT_MANAGER', 'CREATIVE_SPECIALIST'],
-    responsibleLabel: 'Content Manager & Creative Pods',
-    consultedRoles: ['STAKEHOLDER'],
-    consultedLabel: 'Executive Stakeholders (Sarah)',
-    informedRoles: ['DISTRIBUTION_LEAD'],
-    informedLabel: 'Distribution Lead (Devon)'
-  },
-  {
-    stageNumber: 2,
-    id: 'asset_creation',
-    name: 'Asset Creation & Production',
-    accountableRole: 'CONTENT_MANAGER',
-    accountableLabel: 'Elena Vance (Content Manager)',
-    responsibleRoles: ['CREATIVE_SPECIALIST'],
-    responsibleLabel: 'Creative Specialists (Marcus / Video Pod)',
-    consultedRoles: ['CONTENT_MANAGER'],
-    consultedLabel: 'Content Manager (Mid-sprint Checkins)',
-    informedRoles: ['STAKEHOLDER', 'DISTRIBUTION_LEAD'],
-    informedLabel: 'Stakeholders & Syndication Leads'
-  },
-  {
-    stageNumber: 3,
-    id: 'qa_gatekeeper',
-    name: 'QA Gatekeeper & Veto Chamber',
-    accountableRole: 'CONTENT_MANAGER',
-    accountableLabel: 'Elena Vance (Content Manager ONLY)',
-    responsibleRoles: ['CONTENT_MANAGER'],
-    responsibleLabel: 'Content Manager (Executes 4-pt signoff)',
-    consultedRoles: ['CREATIVE_SPECIALIST'],
-    consultedLabel: 'Creative Specialist (Resolves punch list)',
-    informedRoles: ['STAKEHOLDER', 'DISTRIBUTION_LEAD'],
-    informedLabel: 'Stakeholders & Growth Leads',
-    isGatekeeperLock: true
-  },
-  {
-    stageNumber: 4,
-    id: 'publishing_syndication',
-    name: 'Publishing & Syndication',
-    accountableRole: 'DISTRIBUTION_LEAD',
-    accountableLabel: 'Devon Ross (Distribution Lead)',
-    responsibleRoles: ['DISTRIBUTION_LEAD'],
-    responsibleLabel: 'Distribution Lead (SMM & Growth)',
-    consultedRoles: ['CONTENT_MANAGER'],
-    consultedLabel: 'Content Manager (Release Windows)',
-    informedRoles: ['STAKEHOLDER', 'CREATIVE_SPECIALIST'],
-    informedLabel: 'All Pods & Leadership'
-  },
-  {
-    stageNumber: 5,
-    id: 'reporting_optimization',
-    name: 'Reporting & Optimization',
-    accountableRole: 'CONTENT_MANAGER',
-    accountableLabel: 'Elena Vance (Content Manager)',
-    responsibleRoles: ['DISTRIBUTION_LEAD', 'CONTENT_MANAGER'],
-    responsibleLabel: 'Distribution Lead & Content Manager',
-    consultedRoles: ['STAKEHOLDER'],
-    consultedLabel: 'Executive Stakeholders',
-    informedRoles: ['CREATIVE_SPECIALIST'],
-    informedLabel: 'Creative Specialists (Feedback Loops)'
-  }
-];
-
 export const RaciConduitView: React.FC<RaciConduitViewProps> = ({
   assets,
-  currentUser
+  currentUser,
+  allUsers = []
 }) => {
   const [activePersonaFilter, setActivePersonaFilter] = useState<UserRole | 'ALL'>('ALL');
+
+  // Derive dynamic operators from active database / directory state
+  const cmUsers = allUsers.filter((u) => u.role === 'CONTENT_MANAGER' || u.role === 'SUPER_ADMIN');
+  const creativeUsers = allUsers.filter((u) => u.role === 'CREATIVE_SPECIALIST');
+  const distroUsers = allUsers.filter((u) => u.role === 'DISTRIBUTION_LEAD');
+  const stakeholderUsers = allUsers.filter((u) => u.role === 'STAKEHOLDER');
+
+  const cmLabel = cmUsers.length > 0
+    ? `${cmUsers[0].name} (Content Manager)`
+    : 'Content Operations Lead (Content Manager)';
+
+  const creativeLabel = creativeUsers.length > 0
+    ? `${creativeUsers.map(u => u.name).slice(0, 2).join(', ')} (Creative Pod)`
+    : 'Creative Specialists Pod';
+
+  const distroLabel = distroUsers.length > 0
+    ? `${distroUsers[0].name} (Distribution Lead)`
+    : 'Growth & Distribution Lead';
+
+  const stakeholderLabel = stakeholderUsers.length > 0
+    ? `${stakeholderUsers.map(u => u.name).slice(0, 2).join(', ')} (Stakeholders)`
+    : 'Executive Stakeholders';
+
+  const RACI_CHAMBERS: RaciChamber[] = [
+    {
+      stageNumber: 1,
+      id: 'strategy_briefing',
+      name: 'Strategy & Briefing',
+      accountableRole: 'CONTENT_MANAGER',
+      accountableLabel: cmLabel,
+      responsibleRoles: ['CONTENT_MANAGER', 'CREATIVE_SPECIALIST'],
+      responsibleLabel: `${cmLabel} & Creative Pods`,
+      consultedRoles: ['STAKEHOLDER'],
+      consultedLabel: stakeholderLabel,
+      informedRoles: ['DISTRIBUTION_LEAD'],
+      informedLabel: distroLabel
+    },
+    {
+      stageNumber: 2,
+      id: 'asset_creation',
+      name: 'Asset Creation & Production',
+      accountableRole: 'CONTENT_MANAGER',
+      accountableLabel: cmLabel,
+      responsibleRoles: ['CREATIVE_SPECIALIST'],
+      responsibleLabel: creativeLabel,
+      consultedRoles: ['CONTENT_MANAGER'],
+      consultedLabel: 'Content Manager (Mid-sprint Checkins)',
+      informedRoles: ['STAKEHOLDER', 'DISTRIBUTION_LEAD'],
+      informedLabel: 'Stakeholders & Syndication Leads'
+    },
+    {
+      stageNumber: 3,
+      id: 'qa_gatekeeper',
+      name: 'QA Gatekeeper & Veto Chamber',
+      accountableRole: 'CONTENT_MANAGER',
+      accountableLabel: `${cmLabel} (Separation of Duties)`,
+      responsibleRoles: ['CONTENT_MANAGER'],
+      responsibleLabel: 'Content Manager (Executes 4-pt signoff)',
+      consultedRoles: ['CREATIVE_SPECIALIST'],
+      consultedLabel: 'Creative Specialist (Resolves punch list)',
+      informedRoles: ['STAKEHOLDER', 'DISTRIBUTION_LEAD'],
+      informedLabel: 'Stakeholders & Growth Leads',
+      isGatekeeperLock: true
+    },
+    {
+      stageNumber: 4,
+      id: 'publishing_syndication',
+      name: 'Publishing & Syndication',
+      accountableRole: 'DISTRIBUTION_LEAD',
+      accountableLabel: distroLabel,
+      responsibleRoles: ['DISTRIBUTION_LEAD'],
+      responsibleLabel: distroLabel,
+      consultedRoles: ['CONTENT_MANAGER'],
+      consultedLabel: 'Content Manager (Release Windows)',
+      informedRoles: ['STAKEHOLDER', 'CREATIVE_SPECIALIST'],
+      informedLabel: 'All Pods & Leadership'
+    },
+    {
+      stageNumber: 5,
+      id: 'reporting_optimization',
+      name: 'Reporting & Optimization',
+      accountableRole: 'CONTENT_MANAGER',
+      accountableLabel: cmLabel,
+      responsibleRoles: ['DISTRIBUTION_LEAD', 'CONTENT_MANAGER'],
+      responsibleLabel: `${distroLabel} & ${cmLabel}`,
+      consultedRoles: ['STAKEHOLDER'],
+      consultedLabel: stakeholderLabel,
+      informedRoles: ['CREATIVE_SPECIALIST'],
+      informedLabel: 'Creative Specialists (Feedback Loops)'
+    }
+  ];
 
   // Check QA Gatekeeper lock status
   const qaAssets = assets.filter((a) => a.status === 'QA_GATE');
@@ -152,9 +176,9 @@ export const RaciConduitView: React.FC<RaciConduitViewProps> = ({
           </div>
         </div>
 
-        {/* Persona Role Switcher Pills */}
+        {/* Role Lens Filter Pills */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-[#8F9CAE] mr-1 hidden sm:inline">Inspect Persona Lens:</span>
+          <span className="text-xs text-[#8F9CAE] mr-1 hidden sm:inline">Role Filter:</span>
           
           <button
             type="button"
@@ -165,7 +189,7 @@ export const RaciConduitView: React.FC<RaciConduitViewProps> = ({
                 : 'bg-[#181E2C] text-[#8F9CAE] hover:text-white border border-white/5'
             }`}
           >
-            All Matrix
+            All RACI Roles
           </button>
 
           <button
@@ -178,7 +202,7 @@ export const RaciConduitView: React.FC<RaciConduitViewProps> = ({
             }`}
           >
             <UserCheck className="h-3.5 w-3.5" />
-            <span>Elena (Content Manager)</span>
+            <span>Content Managers</span>
           </button>
 
           <button
@@ -191,7 +215,7 @@ export const RaciConduitView: React.FC<RaciConduitViewProps> = ({
             }`}
           >
             <Palette className="h-3.5 w-3.5" />
-            <span>Marcus (Creative Specialist)</span>
+            <span>Creative Specialists</span>
           </button>
 
           <button
@@ -204,7 +228,20 @@ export const RaciConduitView: React.FC<RaciConduitViewProps> = ({
             }`}
           >
             <Send className="h-3.5 w-3.5" />
-            <span>Devon (Distribution Lead)</span>
+            <span>Distribution Leads</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActivePersonaFilter('STAKEHOLDER')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1.5 ${
+              activePersonaFilter === 'STAKEHOLDER'
+                ? 'bg-[#F5A524] text-[#0B0E14]'
+                : 'bg-[#181E2C] text-[#F5A524] hover:bg-[#F5A524]/15 border border-[#F5A524]/30'
+            }`}
+          >
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span>Stakeholders</span>
           </button>
         </div>
       </div>

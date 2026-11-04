@@ -736,7 +736,7 @@ export const AssetDetailStudio: React.FC<AssetDetailStudioProps> = ({
                 <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#F5A524]/15 border border-[#F5A524]/40 text-[#F5A524] text-[11px]">
                   <Lock className="h-3.5 w-3.5 shrink-0" />
                   <span>
-                    Active role (<strong>{currentUser.name} • {currentUser.role}</strong>) cannot toggle Gatekeeper Final Sign-off. Switch to <strong>Elena Vance (Content Manager)</strong> in the top-right menu.
+                    Active role (<strong>{currentUser.name} • {currentUser.role}</strong>) cannot toggle Gatekeeper Final Sign-off. This action requires authorization by an assigned <strong>Content Manager</strong> or <strong>Super Administrator</strong>.
                   </span>
                 </div>
               )}

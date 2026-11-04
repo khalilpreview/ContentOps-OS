@@ -7,8 +7,6 @@ import {
   LogOut,
   LogIn,
   ShieldCheck,
-  Check,
-  UserCheck,
   UserCog
 } from 'lucide-react';
 import { User, UserRole } from '../types';
@@ -16,8 +14,8 @@ import { BrandLogo } from './BrandLogo';
 
 interface NavbarProps {
   currentUser: User;
-  allUsers: User[];
-  onSelectUser: (user: User) => void;
+  allUsers?: User[];
+  onSelectUser?: (user: User) => void;
   activeCount: number;
   maxCapacity: number;
   onOpenNewAsset: () => void;
@@ -35,8 +33,8 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
-  allUsers,
-  onSelectUser,
+  allUsers: _allUsers,
+  onSelectUser: _onSelectUser,
   activeCount,
   maxCapacity,
   onOpenNewAsset,
@@ -160,14 +158,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
 
-        {/* Right: RACI Role Switcher Avatar Dropdown, + New Brief Button, Settings, Sign Out */}
+        {/* Right: Active Operator Profile Menu, + New Brief Button, Settings, Sign Out */}
         <div className="flex items-center gap-2 sm:gap-2.5">
-          {/* Interactive RACI Role Simulator Dropdown */}
+          {/* Active Operator Profile Menu */}
           <div className="relative" ref={dropdownRef}>
             <button
               type="button"
               onClick={() => setIsDropdownOpen((prev) => !prev)}
-              aria-label="Switch Active RACI Role"
+              aria-label="Active Operator Profile"
               aria-expanded={isDropdownOpen}
               className="flex items-center gap-2.5 bg-[#181E2C] hover:bg-[#1E2536] border border-white/[0.07] hover:border-[#00E599]/40 rounded-lg px-2.5 py-1.5 text-xs text-white transition-all cursor-pointer"
             >
@@ -194,73 +192,79 @@ export const Navbar: React.FC<NavbarProps> = ({
               <ChevronDown className={`h-3.5 w-3.5 text-[#8F9CAE] transition-transform ${isDropdownOpen ? 'rotate-180 text-white' : ''}`} />
             </button>
 
-            {/* Dropdown Menu */}
+            {/* Operator Identity Dropdown Card */}
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-72 rounded-xl bg-[#181E2C] border border-white/10 shadow-2xl py-2 z-50">
-                <div className="px-3 py-1.5 border-b border-white/[0.07] flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#8F9CAE] flex items-center gap-1.5">
-                    <UserCheck className="h-3.5 w-3.5 text-[#00E599]" />
-                    <span>RACI Role Simulator</span>
-                  </span>
-                  <span className="text-[10px] font-mono text-[#00E599]">Live Permissions</span>
+              <div className="absolute right-0 mt-2 w-76 rounded-xl bg-[#181E2C] border border-white/10 shadow-2xl py-3 px-3.5 z-50">
+                <div className="flex items-center gap-3 pb-3 border-b border-white/[0.07]">
+                  {currentUser.avatarUrl ? (
+                    <img
+                      src={currentUser.avatarUrl}
+                      alt={currentUser.name}
+                      className="h-10 w-10 rounded-full object-cover ring-2 ring-[#00E599]/40 shrink-0"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-[#00E599]/20 text-[#00E599] flex items-center justify-center font-bold text-sm shrink-0">
+                      {currentUser.name.charAt(0)}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-sm text-white truncate">
+                      {currentUser.name}
+                    </div>
+                    <div className="text-xs text-[#8F9CAE] truncate">{currentUser.email}</div>
+                  </div>
                 </div>
 
-                <div className="py-1 divide-y divide-white/[0.04]">
-                  {allUsers.map((u) => {
-                    const meta = roleLabels[u.role] || roleLabels.CONTENT_MANAGER;
-                    const isSelected = u.id === currentUser.id;
-                    return (
-                      <button
-                        key={u.id}
-                        type="button"
-                        onClick={() => {
-                          onSelectUser(u);
-                          setIsDropdownOpen(false);
-                        }}
-                        className={`w-full px-3 py-2.5 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
-                          isSelected ? 'bg-[#00E599]/10' : 'hover:bg-[#1E2536]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          {u.avatarUrl ? (
-                            <img
-                              src={u.avatarUrl}
-                              alt={u.name}
-                              className="h-7 w-7 rounded-full object-cover ring-1 ring-white/15 shrink-0"
-                            />
-                          ) : (
-                            <div className="h-7 w-7 rounded-full bg-[#121620] text-white flex items-center justify-center font-bold text-xs shrink-0">
-                              {u.name.charAt(0)}
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <div className="text-xs font-semibold text-white truncate flex items-center gap-1.5">
-                              <span>{u.name}</span>
-                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dotColor}`} />
-                            </div>
-                            <div className="text-[11px] text-[#8F9CAE] truncate">
-                              {meta.label} • <span className={meta.textColor}>{u.team || meta.badge}</span>
-                            </div>
-                          </div>
-                        </div>
-                        {isSelected && <Check className="h-4 w-4 text-[#00E599] shrink-0" />}
-                      </button>
-                    );
-                  })}
+                {/* Role & Pod Metadata */}
+                <div className="py-2.5 space-y-1.5 border-b border-white/[0.07]">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[#8F9CAE]">RACI Governance:</span>
+                    <span className={`inline-flex items-center gap-1 font-semibold ${activeRoleMeta.textColor}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${activeRoleMeta.dotColor}`} />
+                      {activeRoleMeta.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[#8F9CAE]">Operational Pod:</span>
+                    <span className="text-white font-medium">{currentUser.department || currentUser.team || 'Production Pod'}</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-[#121620] text-[11px] text-[#8F9CAE] mt-1">
+                    <span className="text-[#00E599] font-mono font-semibold">Scope: </span>
+                    {activeRoleMeta.badge}
+                  </div>
                 </div>
 
-                <div className="p-2 border-t border-white/[0.07] bg-[#121620]/80">
+                {/* Actions */}
+                <div className="pt-2 space-y-1">
                   <button
                     type="button"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       onOpenAiConfig();
                     }}
-                    className="w-full py-1.5 px-2.5 rounded-lg text-xs font-semibold text-[#00E599] hover:bg-[#00E599]/10 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="w-full py-2 px-2.5 rounded-lg text-xs font-semibold text-white hover:bg-white/5 flex items-center justify-between transition-colors cursor-pointer"
                   >
-                    <UserCog className="h-3.5 w-3.5" />
-                    <span>Edit Profile &amp; Team Settings</span>
+                    <span className="flex items-center gap-2">
+                      <UserCog className="h-4 w-4 text-[#00E599]" />
+                      <span>Edit Profile &amp; Settings</span>
+                    </span>
                   </button>
+
+                  {isAuthenticated && onSignOut && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        onSignOut();
+                      }}
+                      className="w-full py-2 px-2.5 rounded-lg text-xs font-semibold text-[#FF4B55] hover:bg-[#FF4B55]/10 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <LogOut className="h-4 w-4 text-[#FF4B55]" />
+                        <span>Sign Out of Account</span>
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
             )}

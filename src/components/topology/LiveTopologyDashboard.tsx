@@ -19,6 +19,7 @@ import { PillarScopeView } from './PillarScopeView';
 interface LiveTopologyDashboardProps {
   assets: ContentAsset[];
   currentUser: User;
+  allUsers?: User[];
   onNavigateToKanban: () => void;
   onOpenAssetDetail: (asset: ContentAsset) => void;
   onOpenNewAsset?: () => void;
@@ -33,6 +34,7 @@ export type TopologyLens =
 export const LiveTopologyDashboard: React.FC<LiveTopologyDashboardProps> = ({
   assets,
   currentUser,
+  allUsers,
   onNavigateToKanban,
   onOpenAssetDetail,
   onOpenNewAsset
@@ -59,7 +61,7 @@ export const LiveTopologyDashboard: React.FC<LiveTopologyDashboardProps> = ({
       id: 'HUB_SPOKE',
       label: 'Hub & Spoke Ecosystem',
       shortLabel: '2. Hub & Spoke Orchestration',
-      description: 'Team & Creator orchestration with Content Manager Elena Vance as central conductor',
+      description: 'Team & Creator orchestration with Content Operations Lead as central conductor',
       icon: Share2,
       accentColor: '#38BDF8'
     },
@@ -203,6 +205,7 @@ export const LiveTopologyDashboard: React.FC<LiveTopologyDashboardProps> = ({
             <HubSpokeView
               assets={assets}
               currentUser={currentUser}
+              allUsers={allUsers}
               onOpenAssetDetail={onOpenAssetDetail}
             />
           )}
@@ -211,6 +214,7 @@ export const LiveTopologyDashboard: React.FC<LiveTopologyDashboardProps> = ({
             <RaciConduitView
               assets={assets}
               currentUser={currentUser}
+              allUsers={allUsers}
               onOpenAssetDetail={onOpenAssetDetail}
             />
           )}

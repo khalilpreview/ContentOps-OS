@@ -231,7 +231,7 @@ export function evaluateCopilotCommand(
     if (qaCard) {
       const roleNote = isContentManager
         ? `As **Content Manager**, you have full RACI authority to clear the remaining checks and stamp the **Gatekeeper Final Sign-off**.`
-        : `⚠️ **RACI Lock Notice:** Your active role is **${context.currentUser.role}**. You can verify items 1–3, but **Gatekeeper Final Sign-off** requires switching to **Elena Vance (Content Manager)**.`;
+        : `⚠️ **RACI Lock Notice:** Your active role is **${context.currentUser.role}**. You can verify items 1–3, but **Gatekeeper Final Sign-off** requires an authorized **Content Manager** or **Super Administrator**.`;
 
       return {
         role: 'assistant',
