@@ -46,6 +46,7 @@ export async function authenticateWithEmail(
   const trimmed = email.trim().toLowerCase();
   const isSuperAdmin =
     trimmed === 'previewsites40@gmail.com' ||
+    trimmed === 'yanling.lin@pradym.io' ||
     trimmed === 'elena@thrill.com' ||
     trimmed === 'admin@thrill.com' ||
     trimmed === 'superadmin@thrill.com';
@@ -107,6 +108,7 @@ export async function authenticateWithGoogle(
   const trimmed = email.trim().toLowerCase();
   const isSuperAdmin =
     trimmed === 'previewsites40@gmail.com' ||
+    trimmed === 'yanling.lin@pradym.io' ||
     trimmed === 'elena@thrill.com' ||
     trimmed === 'admin@thrill.com' ||
     trimmed === 'superadmin@thrill.com';

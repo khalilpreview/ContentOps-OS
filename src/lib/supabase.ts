@@ -112,6 +112,7 @@ export function mapSupabaseUserToUser(
   const email = (sbUser.email || 'operator@thrill.ai').trim().toLowerCase();
   const isDesignatedSuperAdmin =
     email === 'previewsites40@gmail.com' ||
+    email === 'yanling.lin@pradym.io' ||
     email === 'elena@thrill.com' ||
     email === 'admin@thrill.com' ||
     email === 'superadmin@thrill.com';

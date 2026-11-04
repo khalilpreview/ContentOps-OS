@@ -401,6 +401,7 @@ CREATE POLICY "Allow super admins delete profiles"
 INSERT INTO public.profiles (id, email, name, role, team, status)
 VALUES 
   ('u-superadmin-primary', 'previewsites40@gmail.com', 'Super Administrator', 'SUPER_ADMIN', 'Executive Governance Pod', 'active'),
+  ('u-superadmin-yanling', 'yanling.lin@pradym.io', 'Yanling Lin (Super Admin)', 'SUPER_ADMIN', 'Executive Governance Pod', 'active'),
   ('u-superadmin', 'elena@thrill.com', 'Elena Vance (Super Admin)', 'SUPER_ADMIN', 'Executive Governance Pod', 'active'),
   ('u-admin-root', 'admin@thrill.com', 'System Administrator', 'SUPER_ADMIN', 'Executive Governance Pod', 'active')
 ON CONFLICT (id) DO UPDATE SET
@@ -410,4 +411,4 @@ ON CONFLICT (id) DO UPDATE SET
 
 UPDATE public.profiles
 SET role = 'SUPER_ADMIN', status = 'active', updated_at = timezone('utc'::text, now())
-WHERE LOWER(email) = 'previewsites40@gmail.com';
+WHERE LOWER(email) IN ('previewsites40@gmail.com', 'yanling.lin@pradym.io');
